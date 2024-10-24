@@ -1,0 +1,4 @@
+.venv
+.node-modules
+build
+dist
