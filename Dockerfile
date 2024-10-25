@@ -2,7 +2,7 @@ FROM node:20.18.0-bullseye AS frontend-builder
 
 COPY ./frontend /frontend
 WORKDIR /frontend
-RUN npm install && npm run build && rm -rf node_modules
+RUN npm cache clean --force && npm install --legacy-peer-deps && npm run build && rm -rf node_modules
 
 FROM python:3.11.10-slim-bullseye AS runtime
 
@@ -16,7 +16,7 @@ EXPOSE 20038/tcp
 
 # For manifest generation
 LABEL version="0.1.0"
-LABEL permissions='{ "ExposedPorts": { "20038/tcp": {} }, "HostConfig": { "Binds":["/root/.config:/root/.config"], "PortBindings": { "20038/tcp": [ { "HostPort": "" } ] } } }'
+LABEL permissions='{ "ExposedPorts": { "20038/tcp": {} }, "HostConfig": { "Binds":["/root/.config:/root/.config", "/dev:/dev"], "PortBindings": { "20038/tcp": [ { "HostPort": "" } ] } } }'
 LABEL authors='[{ "name": "João Mário Lago", "email": "joaolago@bluerobotics.com" }, { "name": "Willian Galvani", "email": "willian@bluerobotics.com" }, { "name": "Patrick J. Pereira", "email": "patrickelectric@gmail.com" }]'
 LABEL company='{ "about": "", "name": "Blue Robotics", "email": "support@bluerobotics.com" }'
 LABEL type="device-integration"
