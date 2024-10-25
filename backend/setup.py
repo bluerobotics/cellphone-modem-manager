@@ -12,7 +12,7 @@ setup(
     version="0.1.0",
     description="Simple extension to manager LT EG35-G modem",
     license="MIT",
-    packages=find_packages(include=['api']),
+    packages=find_packages(include=['api', 'modem']),
     install_requires=[
         "appdirs==1.4.4",
         "fastapi==0.115.3",
