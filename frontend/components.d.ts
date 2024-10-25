@@ -7,6 +7,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
+    ModemSelector: typeof import('./src/components/ModemSelector.vue')['default']
   }
 }
