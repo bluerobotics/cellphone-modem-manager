@@ -1,5 +1,5 @@
 import abc
-from typing import List, Type
+from typing import List, Type, Optional
 from serial.tools.list_ports_linux import SysFS
 
 from utils import get_modem_descriptors
@@ -28,6 +28,9 @@ class Modem(abc.ABC):
     def __init__(self, device: str, ports: List[SysFS]) -> None:
         self.device: str = device
         self.ports: List[SysFS] = ports
+
+        self.manufacturer: Optional[str] = ports[0].manufacturer if len(ports) > 0 else None
+        self.product: Optional[str] = ports[0].product if len(ports) > 0 else None
 
     @abc.abstractmethod
     def _detected(self) -> bool:
