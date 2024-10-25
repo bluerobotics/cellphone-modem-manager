@@ -12,7 +12,7 @@ RUN pip3 install . && rm -rf dist build lte_eg25_g.egg-info
 
 COPY --from=frontend-builder /frontend/dist /home/pi/lte_eg25_g/app/api/static
 
-EXPOSE 9119/tcp
+EXPOSE 20038/tcp
 
 # For manifest generation
 LABEL version="0.1.0"
