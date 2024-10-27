@@ -2,54 +2,77 @@
   <v-app>
     <v-main>
       <v-container>
-        <modem-selector
-          :modems="availableModems"
-          @modemSelected="handleModemSelection"
+        <SpinningLogo
+          v-if="opLoading"
+          subtitle="Fetching available modems"
         />
-        <v-row v-if="selectedModem">
-          <v-col>
-            <v-card>
-              <v-card-title>Selected Modem</v-card-title>
-              <v-card-text>
-                <p>Device: {{ selectedModem.device }}</p>
-                <p>Manufacturer: {{ selectedModem.manufacturer }}</p>
-                <p>Product: {{ selectedModem.product }}</p>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+        <OperationError
+          v-else-if="opError"
+          title="Failed to load available modems"
+          :subtitle="opError"
+        />
+        <div v-else>
+          <modem-selector-view
+            :modems="availableModems"
+            @modemSelected="onModemSelected"
+          />
+          <modem-details-view v-if="selectedModem" :modem="selectedModem" />
+        </div>
       </v-container>
     </v-main>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import ModemSelector from './components/ModemSelector.vue';
-import ModemManager from '@/services/ModemManager';
-import { ModemDevice } from '@/types/ModemManager';
+import { onMounted, ref } from 'vue';
 
+import ModemSelectorView from './views/ModemSelectorView.vue';
+import ModemDetailsView from './views/ModemDetailsView.vue';
+import SpinningLogo from './components/common/SpinningLogo.vue';
+import OperationError from './components/common/OperationError.vue';
+
+import { ModemDevice } from '@/types/ModemManager';
+import ModemManager from '@/services/ModemManager';
+
+import { sleep } from './utils';
+import { OneMoreTime } from './one-more-time';
+
+
+/** States */
 const availableModems = ref<ModemDevice[]>([]);
 const selectedModem = ref<ModemDevice | null>(null);
 
-async function loadModems() {
+const opLoading = ref<boolean>(true);
+const opError = ref<string | null>(null);
+
+/** Utils */
+const fetchAvailableModems = async () => {
   try {
     const modems = await ModemManager.fetchModems();
-    availableModems.value = modems;
+
+    /** Only update if have changes */
+    if (JSON.stringify(availableModems.value) !== JSON.stringify(modems)) {
+      availableModems.value = modems;
+    }
   } catch (error) {
-    console.error("Failed to load modems:", error);
+    opError.value = String((error as any)?.message);
   }
-}
-
-function handleModemSelection(modem: ModemDevice) {
-  selectedModem.value = modem;
-}
-
-onMounted(loadModems);
-</script>
-
-<script lang="ts">
-export default {
-  components: { ModemSelector }
 };
+
+/** Callbacks */
+const onModemSelected = (modem: ModemDevice) => {
+  selectedModem.value = modem;
+};
+
+/** Tasks */
+new OneMoreTime({ delay: 10000, disposeWith: this }, fetchAvailableModems);
+
+/** Hooks */
+onMounted(async () => {
+  await fetchAvailableModems();
+
+  /** Since this fetch is USUALLY fast we simulate a delay to avoid glitch */
+  await sleep(600);
+  opLoading.value = false;
+});
 </script>

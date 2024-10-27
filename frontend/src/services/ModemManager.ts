@@ -35,7 +35,7 @@ export async function fetchModems(): Promise<ModemDevice[]> {
  * @returns {Promise<ModemDevice[]>}
  */
 export async function fetchModemByDevice(device: string): Promise<ModemDevice> {
-  const response = await api.get(`/modem/${device}/details`, { timeout: 5000 })
+  const response = await api.get(`/modem/${device}`, { timeout: 5000 })
 
   return response.data as ModemDevice
 }
