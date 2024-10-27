@@ -21,6 +21,7 @@ async def fetch() -> list[ModemDevice]:
     return [
         ModemDevice(
             device=modem.device,
+            id=modem.id,
             manufacturer=modem.manufacturer,
             product=modem.product
         )
@@ -28,15 +29,16 @@ async def fetch() -> list[ModemDevice]:
     ]
 
 
-@modem_router_v1.get("/{device}", status_code=status.HTTP_200_OK)
-async def fetch_by_device(device: str) -> ModemDevice:
+@modem_router_v1.get("/{id}/details", status_code=status.HTTP_200_OK)
+async def fetch_by_device(id: str) -> ModemDevice:
     """
     Get details of a modem by device.
     """
-    modem = Modem.get_device(device)
+    modem = Modem.get_device(id)
 
     return ModemDevice(
         device=modem.device,
+        id=modem.id,
         manufacturer=modem.manufacturer,
         product=modem.product
     )

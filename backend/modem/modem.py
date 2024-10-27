@@ -1,4 +1,5 @@
 import abc
+import hashlib
 from typing import List, Type, Optional
 from serial.tools.list_ports_linux import SysFS
 
@@ -18,15 +19,17 @@ class Modem(abc.ABC):
         ]
 
     @classmethod
-    def get_device(cls, device: str) -> Type["Modem"]:
-        modem = next((modem for modem in cls.connected_devices() if modem.device == device), None)
+    def get_device(cls, id: str) -> Type["Modem"]:
+        modem = next((modem for modem in cls.connected_devices() if modem.id == id), None)
         if not modem:
-            raise InvalidModemDevice(f"Device {device} not found in any implementation.")
+            raise InvalidModemDevice(f"Device {id} not found in any implementation.")
 
         return modem
 
     def __init__(self, device: str, ports: List[SysFS]) -> None:
         self.device: str = device
+        # We create a simple hash to be easy to frontend to identify the modem
+        self.id = hashlib.md5(self.device.encode()).hexdigest()
         self.ports: List[SysFS] = ports
 
         self.manufacturer: Optional[str] = ports[0].manufacturer if len(ports) > 0 else None
