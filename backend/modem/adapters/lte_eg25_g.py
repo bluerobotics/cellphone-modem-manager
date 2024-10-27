@@ -1,5 +1,5 @@
 from modem.modem import Modem
-from modem.at import ATCommander, ATCommands, ATDivider
+from modem.at import ATCommander, ATCommand, ATDivider
 from modem.exceptions import ATConnectionError
 
 
@@ -26,8 +26,8 @@ class LTEEG25G(Modem):
 
     def get_usb_mode(self):
         with self.at_commander() as commander:
-            return commander.command(ATCommands.AT_QCFG, ATDivider.EQ, "usbnet")
+            return commander.command(ATCommand.QUERY_CONFIGURATION, ATDivider.EQ, "usbnet")
 
     def set_usb_mode(self, number: str):
         with self.at_commander() as commander:
-            return commander.command(ATCommands.AT_QCFG, ATDivider.EQ, f"usbnet, {number}")
+            return commander.command(ATCommand.QUERY_CONFIGURATION, ATDivider.EQ, f"usbnet, {number}")
