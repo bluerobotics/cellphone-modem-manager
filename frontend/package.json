@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "@mdi/font": "7.4.47",
+    "apexcharts": "^3.54.1",
     "axios": "^1.7.7",
     "roboto-fontface": "*",
     "vue": "^3.4.31",
+    "vue3-apexcharts": "^1.7.0",
     "vuetify": "^3.6.11"
   },
   "devDependencies": {

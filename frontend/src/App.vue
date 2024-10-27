@@ -16,7 +16,12 @@
             :modems="availableModems"
             @modemSelected="onModemSelected"
           />
-          <modem-details-view v-if="selectedModem" :modem="selectedModem" />
+          <v-dialog
+            v-model="showDetails"
+            max-width="800px"
+          >
+            <modem-details-view v-if="selectedModem" :modem="selectedModem" />
+          </v-dialog>
         </div>
       </v-container>
     </v-main>
@@ -45,6 +50,8 @@ const selectedModem = ref<ModemDevice | null>(null);
 const opLoading = ref<boolean>(true);
 const opError = ref<string | null>(null);
 
+const showDetails = ref<boolean>(false);
+
 /** Utils */
 const fetchAvailableModems = async () => {
   try {
@@ -62,6 +69,7 @@ const fetchAvailableModems = async () => {
 /** Callbacks */
 const onModemSelected = (modem: ModemDevice) => {
   selectedModem.value = modem;
+  showDetails.value = true;
 };
 
 /** Tasks */

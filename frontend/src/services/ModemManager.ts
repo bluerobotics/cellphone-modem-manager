@@ -40,6 +40,14 @@ export async function fetchModemByDevice(device: string): Promise<ModemDevice> {
   return response.data as ModemDevice
 }
 
+export async function pingServerByDevice(device: string, server: string): Promise<number> {
+  // const response = await api.get(`/modem/${device}/ping/${server}`, { timeout: 5000 })
+
+  // return response.data as number
+
+  return Math.floor(Math.random() * 100)
+}
+
 export default {
   fetchModems,
   fetchModemByDevice,

@@ -1,26 +1,13 @@
 <template>
-  <div v-if="selectedModem">
-    <v-card rounded="0" flat>
-      <v-card height="80px" class="custom-rounded-select" flat>
-        <v-select
-          v-model="selectedModem"
-          :items="modems"
-          variant="solo-filled"
-          @update:model-value="onSelectModem"
-        >
-          <template v-slot:selection="{ item }">
-            <ModemItem v-if="item" :modem="item.raw" />
-          </template>
-          <template v-slot:item="{ props, item }">
-            <ModemItem v-if="item" :list-props="props" :modem="item.raw" />
-          </template>
-        </v-select>
-      </v-card>
-    </v-card>
-  </div>
-  <div v-else>
+  <div>
     <v-row class="justify-center">
-    <h1>Available modems</h1>
+      <div v-if="modems.length == 0">
+        <h1>No modems found</h1>
+        <h4 class="mt-3">Scanning for new modems...</h4>
+      </div>
+      <h1 v-else>
+        Available modems
+      </h1>
     </v-row>
     <v-row class="align-center justify-center">
       <v-col
@@ -39,7 +26,6 @@
 import { defineEmits, defineProps, ref } from 'vue';
 
 import { ModemDevice } from '@/types/ModemManager';
-import ModemItem from '@/components/ModemItem.vue';
 import ModemCard from '@/components/ModemCard.vue';
 
 defineProps<{

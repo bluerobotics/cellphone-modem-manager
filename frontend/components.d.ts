@@ -7,13 +7,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    ModelDetails: typeof import('./src/components/ModelDetails.vue')['default']
     ModemCard: typeof import('./src/components/ModemCard.vue')['default']
-    ModemDetails: typeof import('./src/components/ModemDetails.vue')['default']
     ModemItem: typeof import('./src/components/ModemItem.vue')['default']
-    ModemItemList: typeof import('./src/components/ModemItemList.vue')['default']
-    ModemListItem: typeof import('./src/components/ModemListItem.vue')['default']
-    ModemSelector: typeof import('./src/components/ModemSelector.vue')['default']
     OperationError: typeof import('./src/components/common/OperationError.vue')['default']
     SpinningLogo: typeof import('./src/components/common/SpinningLogo.vue')['default']
   }
