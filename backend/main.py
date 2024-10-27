@@ -17,7 +17,7 @@ if __name__ == "__main__":
     if args.debug:
         logging.getLogger(SERVICE_NAME).setLevel(logging.DEBUG)
 
-    logger.info("Releasing the extension LTE EG25 G service.")
+    logger.info("Releasing the extension Cellphone Modem Manager.")
     loop = asyncio.new_event_loop()
 
     config = Config(app=application, loop=loop, host=args.host, port=args.port, log_config=None)

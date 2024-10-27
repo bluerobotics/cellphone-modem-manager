@@ -12,6 +12,6 @@ index_router_v1 = APIRouter(
 @index_router_v1.get("/", status_code=200)
 async def root() -> RedirectResponse:
     """
-    Root endpoint for LTE EG25 G extension docs.
+    Root endpoint for Cellphone Modem Manager extension docs.
     """
     return RedirectResponse(url="/v1.0/docs")

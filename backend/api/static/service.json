@@ -1,9 +1,9 @@
 {
-    "name":"LT EG25 G",
-    "description":"Driver for LT EG25 G modem",
+    "name":"Modem Manager",
+    "description":"Simple extension for managing cellphone modems",
     "icon":"mdi-signal-variant",
     "company":"Blue Robotics",
     "version":"0.1.0",
-    "webpage":"https://raw.githubusercontent.com/bluerobotics/BlueOS-LTE-EG25-G/",
+    "webpage":"https://github.com/bluerobotics/cellphone-modem-manager/",
     "api":""
 }
