@@ -6,6 +6,8 @@ RUN npm cache clean --force && npm install --legacy-peer-deps && npm run build &
 
 FROM python:3.11.10-slim-bullseye AS runtime
 
+USER root
+
 WORKDIR /home/pi/cellphone_modem_manager/app
 COPY ./backend ./
 RUN pip3 install . && rm -rf dist build cellphone_modem_manager.egg-info
@@ -16,7 +18,7 @@ EXPOSE 20038/tcp
 
 # For manifest generation
 LABEL version="0.1.0"
-LABEL permissions='{ "ExposedPorts": { "20038/tcp": {} }, "HostConfig": { "Binds":["/root/.config:/root/.config", "/dev:/dev"], "PortBindings": { "20038/tcp": [ { "HostPort": "" } ] } } }'
+LABEL permissions='{ "ExposedPorts": { "20038/tcp": {} }, "HostConfig": { "Privileged": true, "Binds":["/root/.config:/root/.config", "/dev:/dev:rw"], "PortBindings": { "20038/tcp": [ { "HostPort": "" } ] } } }'
 LABEL authors='[{ "name": "João Mário Lago", "email": "joaolago@bluerobotics.com" }, { "name": "Willian Galvani", "email": "willian@bluerobotics.com" }, { "name": "Patrick J. Pereira", "email": "patrickelectric@gmail.com" }]'
 LABEL company='{ "about": "", "name": "Blue Robotics", "email": "support@bluerobotics.com" }'
 LABEL type="device-integration"
