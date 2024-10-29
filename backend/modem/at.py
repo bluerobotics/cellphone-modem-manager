@@ -1,7 +1,7 @@
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Dict, Literal
 
 import serial
 
@@ -10,14 +10,11 @@ from modem.exceptions import ATConnectionError, SerialSafeReadFailed, SerialSafe
 
 class ATCommand(Enum):
     AT = "AT"
-
     SET_ECHO_MODE = "ATE"
     SET_CMD_LINE_TERM = "ATS3"
     SET_RESP_FORMAT_CHAR = "ATS4"
     SET_CMD_LINE_END_CHAR = "ATS5"
-
     RESET_TO_FACTORY = "AT&F"
-
     QUERY_CONFIGURATION = "AT+QCFG"
     QUERY_ENGINEERING_MODE = "AT+QENG"
     QUERY_PING= "AT+QPING"
@@ -64,21 +61,17 @@ class ATCommander:
         self.ser.flush()
         self.ser.read_all()
 
-        if not self.check_ok():
-            raise ATConnectionError("Failed to read 'OK' from serial port")
+        # If we fail to connect we try configure terminators and check again
+        if not self.check_ok() and not self._configure_terminators() and not self.check_ok():
+            raise ATConnectionError(f"Failed to connect to {self.port}")
 
-        # TODO - This is very slow, we must cache it after some time
-        self._configure_terminators()
+        # Terminators we can get to work even when not perfect, but echo mode should be disabled
+        self.command(ATCommand.SET_ECHO_MODE, ATDivider.UNDEFINED, "0", delay=0.1)
 
     def _configure_terminators(self) -> None:
         # Set terminators
-        self.command(ATCommand.SET_CMD_LINE_TERM, ATDivider.EQ, "13")
-        self.command(ATCommand.SET_RESP_FORMAT_CHAR, ATDivider.EQ, "10")
-
-        self.command(ATCommand.SET_CMD_LINE_END_CHAR, ATDivider.EQ, "13")
-
-        # Disable ECHO
-        self.command(ATCommand.SET_ECHO_MODE, ATDivider.UNDEFINED, "0")
+        self.command(ATCommand.SET_CMD_LINE_TERM, ATDivider.EQ, "13", delay=0.1)
+        self.command(ATCommand.SET_RESP_FORMAT_CHAR, ATDivider.EQ, "10", delay=0.1)
 
     def _close(self) -> None:
         if self.ser and self.ser.is_open:
@@ -94,16 +87,14 @@ class ATCommander:
         data = None
         if cmd_id_response:
             data = [
-                [ piece if piece != '-' else None for piece in part.split(f'{cmd_id_response}: ')[1].replace('"', '').split(',') ]
+                [
+                    piece if piece != '-' else None
+                    for piece in part.split(f'{cmd_id_response}: ')[1].replace('"', '').split(',')
+                ]
                 for part in parts
                 if cmd_id_response in part
             ]
-
-        status = [
-            code
-            for code in ATResultCode
-            if code.value in response
-        ]
+        status = [ code for code in ATResultCode if code.value in response ]
 
         return ATResponse(
             status=status[0] if len(status) > 0 else ATResultCode.ERROR,
@@ -122,7 +113,6 @@ class ATCommander:
                 if ATResultCode.ERROR.value in buffer:
                     raise SerialSafeReadFailed("Error found in response")
 
-                print(buffer)
                 if any(code.value in buffer for code in ATResultCode):
                     if cmd_id_response is None or cmd_id_response in buffer:
                         return self._parse_response(buffer, cmd_id_response)
@@ -150,7 +140,6 @@ class ATCommander:
         delay: Optional[int] = 0.3,
         cmd_id_response: Optional[str] = None
     ) -> ATResponse:
-        print("Command:", command)
         self._safe_serial_write(f"{command}\r\n")
 
         # When we don't have a response to wait for, we should wait before reading, average is 300ms
@@ -164,17 +153,21 @@ class ATCommander:
         command: ATCommand,
         divider: ATDivider = ATDivider.UNDEFINED,
         data: str = "",
-        cmd_id_response: bool = True
+        cmd_id_response: bool = True,
+        delay: float = 0.3
     ) -> ATResponse:
         # If commands have AT+ it should include in response it, for async commands like AT+QPING
         # that will return OK as soon as hit, but after some time return the result as +QPING: ......
         expected_cmd_id = f"+{command.value.split('+')[1]}" if "AT+" in command.value and cmd_id_response else None
 
-        return self.raw_command(f"{command.value}{divider.value}{data}\r\n", cmd_id_response=expected_cmd_id)
+        return self.raw_command(
+            f"{command.value}{divider.value}{data}\r\n",
+            cmd_id_response=expected_cmd_id,
+            delay=delay
+        )
 
     def check_ok(self) -> bool:
-        response = self.command(ATCommand.AT)
-        # We need to cover cases where terminators are not set
+        response = self.command(ATCommand.AT, delay=0.1)
         return response.status == ATResultCode.OK
 
     def get_signal_strength(self) -> ATResponse:
