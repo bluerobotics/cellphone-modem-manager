@@ -9,6 +9,7 @@ def get_modem_descriptors() -> Dict[str, List[SysFS]]:
     modem_ports: Dict[str, List[SysFS]] = {}
     for port in sorted(comports(), key=lambda port: port.name):
         # Group ports by their usb_device_path
-        modem_ports.setdefault(port.usb_device_path, []).append(port)
+        if port.usb_device_path is not None:
+            modem_ports.setdefault(port.usb_device_path, []).append(port)
 
     return modem_ports

@@ -6,6 +6,7 @@ from serial.tools.list_ports_linux import SysFS
 from utils import get_modem_descriptors
 from modem.at import ATCommander
 from modem.exceptions import InvalidModemDevice
+from modem.models import ModemCellInfo, ModemSignalQuality, PDPInfo
 
 
 class Modem(abc.ABC):
@@ -44,9 +45,33 @@ class Modem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_usb_mode(self, number: str):
+    def reboot(self) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def set_usb_mode(self, number: str, mode: str):
+    def get_usb_mode(self) -> int:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_usb_mode(self, mode: str) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_pdp_info(self) -> List[PDPInfo]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_apn(self, profile: int, apn: str) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_signal_strength(self) -> ModemSignalQuality:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_cell_info(self) -> ModemCellInfo:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def ping(self, host: str) -> int:
         raise NotImplementedError
