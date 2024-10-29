@@ -1,9 +1,16 @@
-from typing import List, Optional
+from typing import List
 
-from modem.modem import Modem
 from modem.at import ATCommander, ATCommand, ATDivider
 from modem.exceptions import ATConnectionError
-from modem.models import ModemCellInfo, ModemSignalQuality, PDPInfo, ServingCellInfo, NeighborCellInfo
+from modem.models import (
+    ModemCellInfo,
+    ModemSignalQuality,
+    PDPInfo,
+    ServingCellInfo,
+    NeighborCellInfo,
+)
+from modem.modem import Modem
+from utils import arr_to_model
 
 
 class LTEEG25G(Modem):
@@ -12,12 +19,6 @@ class LTEEG25G(Modem):
         Any port with manufacturer "Quectel" and product "EG25-G" is considered detected for this implementation.
         """
         return any(port.manufacturer == "Quectel" and port.product == "EG25-G" for port in self.ports)
-
-    def _int_or_none(self, value: str) -> Optional[int]:
-        try:
-            return int(value)
-        except Exception:
-            return None
 
     def at_commander(self) -> ATCommander:
         # Usually the 3 port is the AT port in Quectel modems, so try it first
@@ -54,16 +55,7 @@ class LTEEG25G(Modem):
             response = cmd.get_pdp_info()
 
             return [
-                PDPInfo(
-                    profile_id=info[0],
-                    protocol=info[1],
-                    apn=info[2],
-                    ip_address=info[3],
-                    primary_dns=info[4],
-                    secondary_dns=info[5],
-                    ipv6_address=info[6],
-                    status=info[7]
-                )
+                arr_to_model(info, PDPInfo)
                 for info in response.data
             ]
 
@@ -76,61 +68,22 @@ class LTEEG25G(Modem):
         with self.at_commander() as cmd:
             response = cmd.get_signal_strength()
 
-            return ModemSignalQuality(
-                signal_strength=int(response.data[0][0]),
-                bit_error_rate=int(response.data[0][1])
-            )
+            return arr_to_model(response.data[0], ModemSignalQuality)
 
     def get_cell_info(self) -> ModemCellInfo:
         with self.at_commander() as cmd:
             # +QENG: "servingcell","NOCONN","LTE","FDD",724,04,482440F,228,9410,28,3,3,8824,-88,-13,-57,10,31
-            serving_cell = cmd.get_serving_cell().data[0]
+            serving_cell = cmd.get_serving_cell()
+            serving_cell.data[0].pop(0) # Remove the first element since we don't need it
             # +QENG: "neighbourcell intra","LTE",9410,228,-15,-88,-55,0,31,7,30,2,50
+            # ...
             # +QENG: "neighbourcell inter","LTE",400,-,-,-,-,-,-,0,2,7
             neighbor_cells = cmd.get_neighboring_cells()
 
-            if len(serving_cell) < 18:
-                serving_cell.extend([None] * (18 - len(serving_cell)))
-            for cell in neighbor_cells.data:
-                if len(cell) < 13:
-                    cell.extend([None] * (13 - len(cell)))
-
             return ModemCellInfo(
-                serving_cell=ServingCellInfo(
-                    network_status=serving_cell[1],
-                    access_technology=serving_cell[2],
-                    duplex_mode=serving_cell[3],
-                    mobile_country_code=int(serving_cell[4]),
-                    mobile_network_code=int(serving_cell[5]),
-                    cell_identity=serving_cell[6],
-                    physical_cell_id=int(serving_cell[7]),
-                    earfcn=int(serving_cell[8]),
-                    frequency_band=int(serving_cell[9]),
-                    tracking_area_code=int(serving_cell[10]),
-                    reference_signal_power=int(serving_cell[11]),
-                    timing_advance=self._int_or_none(serving_cell[12]),
-                    reference_signal_received_power=self._int_or_none(serving_cell[13]),
-                    reference_signal_received_quality=self._int_or_none(serving_cell[14]),
-                    snr=self._int_or_none(serving_cell[15]),
-                    uplink_bandwidth=self._int_or_none(serving_cell[16]),
-                    downlink_bandwidth=self._int_or_none(serving_cell[17]),
-                ),
+                serving_cell=arr_to_model(serving_cell.data[0], ServingCellInfo),
                 neighbor_cells=[
-                    NeighborCellInfo(
-                        cell_type=cell[0],
-                        access_technology=cell[1],
-                        earfcn=int(cell[2]),
-                        physical_cell_id=self._int_or_none(cell[3]),
-                        signal_quality=self._int_or_none(cell[4]),
-                        reference_signal_received_power=self._int_or_none(cell[5]),
-                        snr=self._int_or_none(cell[6]),
-                        timing_advance=self._int_or_none(cell[7]),
-                        downlink_bandwidth=self._int_or_none(cell[8]),
-                        uplink_bandwidth=self._int_or_none(cell[9]),
-                        qrxlevmin=self._int_or_none(cell[10]),
-                        signal_quality_threshold=self._int_or_none(cell[11]),
-                        signal_strength_threshold=self._int_or_none(cell[12])
-                    )
+                    arr_to_model(cell, NeighborCellInfo)
                     for cell in neighbor_cells.data
                 ]
             )

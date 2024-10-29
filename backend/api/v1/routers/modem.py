@@ -95,7 +95,7 @@ async def set_usb_mode(id: str, mode: str) -> None:
 
 
 @modem_router_v1.get("/{id}/pdp", status_code=status.HTTP_200_OK)
-async def fetch_pdp_info(id: str) -> PDPInfo:
+async def fetch_pdp_info(id: str) -> list[PDPInfo]:
     """
     Get PDP information of a modem by device.
     """

@@ -1,12 +1,14 @@
 import abc
 import hashlib
 from typing import List, Type, Optional
+
 from serial.tools.list_ports_linux import SysFS
 
 from utils import get_modem_descriptors
 from modem.at import ATCommander
 from modem.exceptions import InvalidModemDevice
 from modem.models import ModemCellInfo, ModemSignalQuality, PDPInfo
+
 
 
 class Modem(abc.ABC):

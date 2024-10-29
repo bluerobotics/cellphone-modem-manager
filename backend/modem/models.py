@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class ModemDevice(BaseModel):
@@ -59,6 +60,7 @@ class PDPInfo(BaseModel):
     secondary_dns: Optional[str] = None
     ipv6_address: Optional[str] = None
     status: str
+
 
 class ModemSignalQuality(BaseModel):
     signal_strength: int
