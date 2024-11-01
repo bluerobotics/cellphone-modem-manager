@@ -21,5 +21,6 @@ setup(
         "pydantic==2.9.2",
         "pyserial==3.5",
         "uvicorn==0.32.0",
+        "commonwealth @ git+https://github.com/bluerobotics/BlueOS.git@1.3.0#egg=commonwealth&subdirectory=core/libs/commonwealth",
     ],
 )
