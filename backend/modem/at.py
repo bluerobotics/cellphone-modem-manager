@@ -1,7 +1,7 @@
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Dict, Literal
+from typing import Dict, Literal, List, Optional
 
 import serial
 
@@ -15,14 +15,11 @@ class ATCommand(Enum):
     SET_RESP_FORMAT_CHAR = "ATS4"
     SET_CMD_LINE_END_CHAR = "ATS5"
     RESET_TO_FACTORY = "AT&F"
-    QUERY_CONFIGURATION = "AT+QCFG"
-    QUERY_ENGINEERING_MODE = "AT+QENG"
-    QUERY_PING= "AT+QPING"
-    CONFIGURE_FUNCTIONALITY = "AT+CFUN"
-    CONFIGURE_PDP_CONTEXT = "AT+CGDCONT"
+    CONFIGURE_CLOCK = "AT+CCLK"
     CHECK_SIGNAL_QUALITY = "AT+CSQ"
     CONFIGURE_OPERATOR = "AT+COPS"
-    CONFIGURE_CLOCK = "AT+CCLK"
+    CONFIGURE_PDP_CONTEXT = "AT+CGDCONT"
+    CONFIGURE_FUNCTIONALITY = "AT+CFUN"
 
 
 class ATDivider(Enum):
@@ -51,11 +48,15 @@ class ATResponse:
 
 
 class ATCommander:
+    _locked_ports: Dict[str, Literal[True]] = {}
+
     def __init__(self, port: str, baud: int = 115200):
         self.port = port
         self.baud = baud
+        # Init as None to avoid errors on __del__ if we fail to connect
+        self.ser = None
         self.ser = serial.Serial(self.port, self.baud)
-        self.ser.timeout = 5 # Max timeout
+        self.ser.timeout = 5 # Max timeout in seconds
 
         # Clear buffers
         self.ser.flush()
@@ -64,9 +65,10 @@ class ATCommander:
         # If we fail to connect we try configure terminators and check again
         if not self.check_ok() and not self._configure_terminators() and not self.check_ok():
             raise ATConnectionError(f"Failed to connect to {self.port}")
-
         # Terminators we can get to work even when not perfect, but echo mode should be disabled
         self.command(ATCommand.SET_ECHO_MODE, ATDivider.UNDEFINED, "0", delay=0.1)
+
+        self._locked_ports[port] = True
 
     def _configure_terminators(self) -> None:
         # Set terminators
@@ -76,13 +78,15 @@ class ATCommander:
     def _close(self) -> None:
         if self.ser and self.ser.is_open:
             self.ser.close()
+        # Unlock port
+        self._locked_ports.pop(self.port, None)
+
+    @staticmethod
+    def is_locked(port: str) -> bool:
+        return port in ATCommander._locked_ports
 
     def _parse_response(self, response: str, cmd_id_response: Optional[str] = None) -> ATResponse:
-        parts = [
-            part
-            for part in (response.split('\r\n') if '\r\n' in response else response.split('\n'))
-            if part
-        ]
+        parts = [part for part in response.splitlines() if part]
 
         data = None
         if cmd_id_response:
@@ -94,12 +98,9 @@ class ATCommander:
                 for part in parts
                 if cmd_id_response in part
             ]
-        status = [ code for code in ATResultCode if code.value in response ]
+        status = next((code for code in ATResultCode if code.value in response), ATResultCode.ERROR)
 
-        return ATResponse(
-            status=status[0] if len(status) > 0 else ATResultCode.ERROR,
-            data=data
-        )
+        return ATResponse(status=status, data=data)
 
     def _cmd_read_response(self, cmd_id_response: Optional[str] = None) -> ATResponse:
         buffer: str = ""
@@ -132,6 +133,9 @@ class ATCommander:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self._close()
+
+    def __del__(self):
         self._close()
 
     def raw_command(
@@ -179,12 +183,6 @@ class ATCommander:
     def get_pdp_info(self) -> ATResponse:
         return self.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.QUESTION)
 
-    def get_neighboring_cells(self) -> ATResponse:
-        return self.command(ATCommand.QUERY_ENGINEERING_MODE, ATDivider.EQ, '"neighbourcell"')
-
-    def get_serving_cell(self) -> ATResponse:
-        return self.command(ATCommand.QUERY_ENGINEERING_MODE, ATDivider.EQ, '"servingcell"')
-
     def get_clock(self) -> ATResponse:
         return self.command(ATCommand.CONFIGURE_CLOCK, ATDivider.QUESTION)
 
@@ -196,6 +194,3 @@ class ATCommander:
 
     def reset_to_factory(self) -> ATResponse:
         return self.command(ATCommand.RESET_TO_FACTORY)
-
-    def ping(self, host: str, n: int = 4) -> ATResponse:
-        return self.command(ATCommand.QUERY_PING, ATDivider.EQ, f'1,"{host}",{n},1')

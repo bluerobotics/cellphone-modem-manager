@@ -1,14 +1,13 @@
 import abc
 import hashlib
-from typing import List, Type, Optional
+from typing import List, Optional, Type
 
 from serial.tools.list_ports_linux import SysFS
 
-from utils import get_modem_descriptors
 from modem.at import ATCommander
 from modem.exceptions import InvalidModemDevice
-from modem.models import ModemCellInfo, ModemSignalQuality, PDPInfo
-
+from modem.models import ModemCellInfo, ModemSignalQuality, PDPContext, USBNetMode
+from utils import get_modem_descriptors
 
 
 class Modem(abc.ABC):
@@ -51,19 +50,19 @@ class Modem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_usb_mode(self) -> int:
+    def get_usb_net_mode(self) -> USBNetMode:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def set_usb_mode(self, mode: str) -> None:
+    def set_usb_net_mode(self, mode: USBNetMode) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_pdp_info(self) -> List[PDPInfo]:
+    def get_pdp_info(self) -> List[PDPContext]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def set_apn(self, profile: int, apn: str) -> None:
+    def get_cell_info(self) -> ModemCellInfo:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -71,7 +70,7 @@ class Modem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_cell_info(self) -> ModemCellInfo:
+    def set_apn(self, profile: int, apn: str) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
