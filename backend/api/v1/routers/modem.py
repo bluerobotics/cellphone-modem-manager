@@ -2,7 +2,13 @@ from fastapi import APIRouter, status
 from fastapi_versioning import versioned_api_route
 
 from modem import Modem
-from modem.models import ModemDevice, ModemSignalQuality, ModemCellInfo, PDPInfo
+from modem.models import (
+    ModemDevice,
+    ModemSignalQuality,
+    ModemCellInfo,
+    PDPContext,
+    USBNetMode
+)
 
 modem_router_v1 = APIRouter(
     prefix="/modem",
@@ -75,27 +81,27 @@ async def reboot_by_id(modem_id: str) -> None:
 
 
 @modem_router_v1.get("/{id}/config/usb_net", status_code=status.HTTP_200_OK)
-async def fetch_usb_mode(id: str) -> int:
+async def fetch_usb_mode(id: str) -> USBNetMode:
     """
     Get USB mode of a modem by device.
     """
     modem = Modem.get_device(id)
 
-    return modem.get_usb_mode()
+    return modem.get_usb_net_mode()
 
 
 @modem_router_v1.put("/{id}/config/usb_net/{mode}", status_code=status.HTTP_204_NO_CONTENT)
-async def set_usb_mode(id: str, mode: str) -> None:
+async def set_usb_mode(id: str, mode: USBNetMode) -> None:
     """
     Set USB mode of a modem by device.
     """
     modem = Modem.get_device(id)
 
-    return modem.set_usb_mode(mode)
+    return modem.set_usb_net_mode(mode)
 
 
 @modem_router_v1.get("/{id}/pdp", status_code=status.HTTP_200_OK)
-async def fetch_pdp_info(id: str) -> list[PDPInfo]:
+async def fetch_pdp_info(id: str) -> list[PDPContext]:
     """
     Get PDP information of a modem by device.
     """

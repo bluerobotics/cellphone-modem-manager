@@ -1,6 +1,9 @@
 class ATConnectionError(Exception):
     """Raised when the modem fails to establish an AT connection."""
 
+class ATConnectionTimeout(Exception):
+    """Raised when the modem fails to establish an AT connection within the timeout period."""
+
 class SerialSafeReadFailed(Exception):
     """Raised when the serial port fails to read the expected number of bytes within the timeout period."""
 
