@@ -10,7 +10,15 @@ USER root
 
 WORKDIR /home/pi/cellphone_modem_manager/app
 COPY ./backend ./
-RUN pip3 install . && rm -rf dist build cellphone_modem_manager.egg-info
+
+# Install build dependencies for commonwealth and psutil, then remove them after pip install
+RUN apt-get update && \
+    apt-get install -y gcc libc-dev && \
+    pip3 install . && \
+    rm -rf dist build cellphone_modem_manager.egg-info && \
+    apt-get remove -y gcc libc-dev && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=frontend-builder /frontend/dist /home/pi/cellphone_modem_manager/app/api/static
 
