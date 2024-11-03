@@ -92,7 +92,7 @@ class ATCommander:
     def _parse_response(self, response: str, cmd_id_response: Optional[str] = None) -> ATResponse:
         parts = [part for part in response.splitlines() if part]
 
-        data = None
+        data = [parts] if len(parts) > 1 else None
         if cmd_id_response:
             data = [
                 [
