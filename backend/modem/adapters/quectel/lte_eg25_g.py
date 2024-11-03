@@ -60,6 +60,7 @@ class LTEEG25G(Modem):
     def reboot(self, cmd: ATCommander) -> None:
         cmd.reboot_modem()
 
+    @with_at_commander
     def get_mt_info(self, cmd: ATCommander) -> ModemDeviceDetails:
         # Quectel
         # EG25
