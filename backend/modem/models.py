@@ -13,8 +13,7 @@ class ModemDevice(BaseModel):
 
 
 class ModemDeviceDetails(ModemDevice):
-    model: str
-    firmware: str
+    firmware_revision: str
 
 # Configurations related
 

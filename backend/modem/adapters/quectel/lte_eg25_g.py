@@ -6,6 +6,7 @@ from modem.at import ATCommand, ATCommander, ATDivider
 from modem.exceptions import ATConnectionError, ATConnectionTimeout
 from modem.models import (
     AccessTechnology,
+    ModemDeviceDetails,
     ModemCellInfo,
     ModemSignalQuality,
     NeighborCellType,
@@ -58,6 +59,21 @@ class LTEEG25G(Modem):
     @with_at_commander
     def reboot(self, cmd: ATCommander) -> None:
         cmd.reboot_modem()
+
+    def get_mt_info(self, cmd: ATCommander) -> ModemDeviceDetails:
+        # Quectel
+        # EG25
+        # Revision: EG25GGBR07A08M2G_BETA0416
+        # OK
+        response = cmd.get_mt_info().data[0]
+
+        return ModemDeviceDetails(
+            device=self.device,
+            id=self.id,
+            manufacturer=response[0],
+            product=response[1],
+            firmware_revision=response[2].replace("Revision: ", "")
+        )
 
     @with_at_commander
     def get_usb_net_mode(self, cmd: ATCommander) -> USBNetMode:
