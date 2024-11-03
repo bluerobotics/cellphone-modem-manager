@@ -10,6 +10,10 @@ from modem.exceptions import ATConnectionError, SerialSafeReadFailed, SerialSafe
 
 class ATCommand(Enum):
     AT = "AT"
+    ATI = "ATI"
+    MANUFACTURER_IDENTIFICATION = "AT+GMI"
+    MODEL_IDENTIFICATION = "AT+GMM"
+    FIRMWARE_REV_IDENTIFICATION = "AT+GMR"
     SET_ECHO_MODE = "ATE"
     SET_CMD_LINE_TERM = "ATS3"
     SET_RESP_FORMAT_CHAR = "ATS4"
@@ -173,6 +177,9 @@ class ATCommander:
     def check_ok(self) -> bool:
         response = self.command(ATCommand.AT, delay=0.1)
         return response.status == ATResultCode.OK
+
+    def get_mt_info(self) -> ATResponse:
+        return self.command(ATCommand.ATI)
 
     def get_signal_strength(self) -> ATResponse:
         return self.command(ATCommand.CHECK_SIGNAL_QUALITY)

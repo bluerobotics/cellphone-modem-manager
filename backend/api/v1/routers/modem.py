@@ -4,6 +4,7 @@ from fastapi_versioning import versioned_api_route
 from modem import Modem
 from modem.models import (
     ModemDevice,
+    ModemDeviceDetails,
     ModemSignalQuality,
     ModemCellInfo,
     PDPContext,
@@ -36,18 +37,13 @@ async def fetch() -> list[ModemDevice]:
 
 
 @modem_router_v1.get("/{modem_id}/details", status_code=status.HTTP_200_OK)
-async def fetch_by_id(modem_id: str) -> ModemDevice:
+async def fetch_by_id(modem_id: str) -> ModemDeviceDetails:
     """
     Get details of a modem by id.
     """
     modem = Modem.get_device(modem_id)
 
-    return ModemDevice(
-        device=modem.device,
-        id=modem.id,
-        manufacturer=modem.manufacturer,
-        product=modem.product
-    )
+    return modem.get_mt_info()
 
 
 @modem_router_v1.get("/{modem_id}/signal", status_code=status.HTTP_200_OK)

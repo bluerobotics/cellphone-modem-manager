@@ -6,7 +6,13 @@ from serial.tools.list_ports_linux import SysFS
 
 from modem.at import ATCommander
 from modem.exceptions import InvalidModemDevice
-from modem.models import ModemCellInfo, ModemSignalQuality, PDPContext, USBNetMode
+from modem.models import (
+    ModemDeviceDetails,
+    ModemCellInfo,
+    ModemSignalQuality,
+    PDPContext,
+    USBNetMode
+)
 from utils import get_modem_descriptors
 
 
@@ -47,6 +53,10 @@ class Modem(abc.ABC):
 
     @abc.abstractmethod
     def reboot(self) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_mt_info(self) -> ModemDeviceDetails:
         raise NotImplementedError
 
     @abc.abstractmethod
