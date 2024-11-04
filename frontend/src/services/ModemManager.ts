@@ -1,20 +1,26 @@
 import axios from 'axios'
 import {
-  ModemDevice,
-  ModemDeviceDetails,
-  ModemSignalQuality,
+  CellLocation,
+  DataUsageControls,
+  DataUsageSettings,
   ModemCellInfo,
   ModemClockDetails,
-  USBNetMode,
-  PDPContext,
+  ModemDevice,
+  ModemDeviceDetails,
+  ModemPosition,
+  ModemSIMStatus,
+  ModemSignalQuality,
+  NearbyCellTower,
   OperatorInfo,
+  PDPContext,
+  USBNetMode,
 } from '@/types/ModemManager'
 
 const MODEM_MANAGER_V1_API = `/v1.0`
 
 const api = axios.create({
   baseURL: MODEM_MANAGER_V1_API,
-  timeout: 10000,
+  timeout: 15000,
 })
 
 /**
@@ -57,6 +63,19 @@ export async function fetchCellInfoById(modemId: string): Promise<ModemCellInfo>
 }
 
 /**
+ * Execute an AT command in a modem by modem id.
+ * @param {string} modemId - Modem ID
+ * @param {string} command - AT command to be executed
+ * @param {number} delay - Delay in seconds between sending the command and reading the response
+ * @returns {Promise<string>}
+ */
+export async function commandById(modemId: string, command: string, delay: number = 0.3): Promise<string> {
+  command = encodeURIComponent(command)
+  const response = await api.post(`/modem/${modemId}/commander?command=${command}&delay=${delay}`)
+  return response.data as string
+}
+
+/**
  * Reboot a modem by id.
  * @param {string} modemId - Modem ID
  * @returns {Promise<void>}
@@ -82,6 +101,26 @@ export async function resetById(modemId: string): Promise<void> {
 export async function fetchClockById(modemId: string): Promise<ModemClockDetails> {
   const response = await api.get(`/modem/${modemId}/clock`)
   return response.data as ModemClockDetails
+}
+
+/**
+ * Return the current position of a modem by modem id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<ModemPosition>}
+ */
+export async function fetchPositionById(modemId: string): Promise<ModemPosition> {
+  const response = await api.get(`/modem/${modemId}/position`)
+  return response.data as ModemPosition
+}
+
+/**
+ * Get SIM status of a modem by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<ModemSIMStatus>}
+ */
+export async function fetchSIMStatusById(modemId: string): Promise<ModemSIMStatus> {
+  const response = await api.get(`/modem/${modemId}/sim_status`)
+  return response.data as ModemSIMStatus
 }
 
 /**
@@ -132,20 +171,66 @@ export async function fetchOperatorInfoById(modemId: string): Promise<OperatorIn
  * @returns {Promise<void>}
  */
 export async function setAPNByProfileById(modemId: string, profile: number, apn: string): Promise<void> {
-  await api.put(`/modem/${modemId}/pdp/${profile}apn/${apn}`)
+  await api.put(`/modem/${modemId}/pdp/${profile}/apn/${apn}`)
+}
+
+/**
+ * Get data usage details of a modem by modem id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<DataUsageSettings>}
+ */
+export async function fetchDataUsageById(modemId: string): Promise<DataUsageSettings> {
+  const response = await api.get(`/modem/${modemId}/usage/details`)
+  return response.data as DataUsageSettings
+}
+
+/**
+ * Set data usage control settings of a modem by modem id.
+ * @param {string} modemId - Modem ID
+ * @param {DataUsageControls} control - Data usage control settings
+ * @returns {Promise<DataUsageSettings>}
+ */
+export async function setDataUsageControlById(modemId: string, control: DataUsageControls): Promise<DataUsageSettings> {
+  const response = await api.put(`/modem/${modemId}/usage/control`, control)
+  return response.data as DataUsageSettings
+}
+
+export async function fetchCellCoordinates(
+  mcc: number,
+  mnc: number,
+  lac: number,
+  cellId: number
+): Promise<CellLocation> {
+  const response = await api.get(`/cells/coordinate?mcc=${mcc}&mnc=${mnc}&lac=${lac}&cell_id=${cellId}`)
+  return response.data as CellLocation
+}
+
+export async function fetchNearbyCellsCoordinates(
+  lat: number,
+  lon: number,
+): Promise<NearbyCellTower[]> {
+  const response = await api.get(`/cells/nearby?lat=${lat}&lon=${lon}`)
+  return response.data as NearbyCellTower[]
 }
 
 export default {
+  commandById,
   fetch,
   fetchById,
-  fetchSignalStrengthById,
+  fetchCellCoordinates,
   fetchCellInfoById,
+  fetchClockById,
+  fetchDataUsageById,
+  fetchNearbyCellsCoordinates,
+  fetchOperatorInfoById,
+  fetchPDPInfoById,
+  fetchPositionById,
+  fetchSIMStatusById,
+  fetchSignalStrengthById,
+  fetchUSBModeById,
   rebootById,
   resetById,
-  fetchClockById,
-  fetchUSBModeById,
-  setUSBModeById,
-  fetchPDPInfoById,
-  fetchOperatorInfoById,
   setAPNByProfileById,
+  setDataUsageControlById,
+  setUSBModeById,
 }

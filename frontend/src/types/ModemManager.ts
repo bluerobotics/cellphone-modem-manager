@@ -15,7 +15,7 @@ export interface ModemFirmwareRevision {
   authors?: string
 }
 
-export interface ModemDeviceDetails {
+export interface ModemDeviceDetails extends ModemDevice {
   imei: string
   serial_number: string
   imsi?: string
@@ -26,6 +26,36 @@ export interface ModemClockDetails {
   date: string
   time: string
   gmt_offset: number
+}
+
+export interface ModemPosition {
+  latitude: number
+  longitude: number
+  // If the position was estimated by other sources like mavlink it will be considered as external
+  external_source: boolean
+}
+
+export enum ModemSIMStatus {
+  DISCONNECTED = "0",
+  CONNECTED = "1",
+  UNKNOWN = "2",
+}
+
+export interface DataUsageControls {
+  data_control_enabled: boolean
+  // Data limit in bytes, default is 2GB
+  data_limit: number
+  // The day of the month when the data usage resets
+  data_reset_day: number
+  // The date when the data usage was last reset
+  last_reset_date: string
+}
+
+export interface DataUsageSettings extends DataUsageControls {
+  // RX and TX data used in bytes
+  data_used: [number, number]
+  // List of data points from last data_reset_day to now, key is the month day and value is RX and TX data used
+  data_points: Record<string, [number, number]>
 }
 
 /**
@@ -145,7 +175,7 @@ export interface PDPContext {
 /** Signal quality related */
 
 export interface ModemSignalQuality {
-  signal_strength: number
+  signal_strength_dbm: number
   bit_error_rate: number
 }
 
@@ -181,4 +211,23 @@ export interface OperatorInfo {
   format: OperatorFormat
   operator: string
   act: OperatorAct
+}
+
+/** Cells Location */
+
+export interface CellLocation {
+  latitude: number
+  longitude: number
+  range: number
+}
+
+export interface NearbyCellRadio {
+  type: string
+}
+
+export interface NearbyCellTower {
+  latitude: number
+  longitude: number
+  range: number
+  radio: NearbyCellRadio
 }
