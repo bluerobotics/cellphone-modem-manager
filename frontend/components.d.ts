@@ -7,9 +7,23 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    DeviceDetailsTab: typeof import('./src/components/device/DeviceDetailsTab.vue')['default']
+    InternetControllerMode: typeof import('./src/components/internet/InternetControllerMode.vue')['default']
+    InternetDetailsTab: typeof import('./src/components/internet/InternetDetailsTab.vue')['default']
+    InternetSpeed: typeof import('./src/components/internet/InternetSpeed.vue')['default']
     ModemCard: typeof import('./src/components/ModemCard.vue')['default']
-    ModemItem: typeof import('./src/components/ModemItem.vue')['default']
+    ModemDeviceDetails: typeof import('./src/components/device/ModemDeviceDetails.vue')['default']
+    ModemOperatorDetails: typeof import('./src/components/device/ModemOperatorDetails.vue')['default']
+    NeighborCellsTable: typeof import('./src/components/network/NeighborCellsTable.vue')['default']
+    NetworkDetailsTab: typeof import('./src/components/network/NetworkDetailsTab.vue')['default']
+    NetworkMap: typeof import('./src/components/network/NetworkMap.vue')['default']
+    NetworkTowers: typeof import('./src/components/network/NetworkTowers.vue')['default']
     OperationError: typeof import('./src/components/common/OperationError.vue')['default']
+    PDPContextDetails: typeof import('./src/components/internet/PDPContextDetails.vue')['default']
+    ServingTower: typeof import('./src/components/network/ServingTower.vue')['default']
     SpinningLogo: typeof import('./src/components/common/SpinningLogo.vue')['default']
+    UsageControls: typeof import('./src/components/usage/UsageControls.vue')['default']
+    UsageDetails: typeof import('./src/components/usage/UsageDetails.vue')['default']
+    UsageDetailsTab: typeof import('./src/components/usage/UsageDetailsTab.vue')['default']
   }
 }
