@@ -1,6 +1,7 @@
 /**
- * Represents details about a given modem device
+ * General modem
  */
+
 export interface ModemDevice {
   device: string
   id: string
@@ -8,74 +9,176 @@ export interface ModemDevice {
   product: string
 }
 
+export interface ModemFirmwareRevision {
+  firmware_revision: string
+  timestamp?: string
+  authors?: string
+}
+
+export interface ModemDeviceDetails {
+  imei: string
+  serial_number: string
+  imsi?: string
+  firmware_revision: ModemFirmwareRevision
+}
+
+export interface ModemClockDetails {
+  date: string
+  time: string
+  gmt_offset: number
+}
+
 /**
- * Represents information about the serving cell for the modem
+ * Configurations related
  */
+
+export enum USBNetMode {
+  QMI = "0",
+  ECM = "1",
+  MBIM = "2",
+}
+
+/**
+ * Cell Towers related
+ */
+
+export enum ServingCellState {
+  SEARCH = "SEARCH",
+  LIMSRV = "LIMSRV",
+  NOCONN = "NOCONN",
+  CONNECT = "CONNECT",
+}
+
+export enum AccessTechnology {
+  GSM = "GSM",
+  WCDMA = "WCDMA",
+  LTE = "LTE",
+  CDMA = "CDMA",
+  HDR = "HDR",
+  TDSCDMA = "TDSCDMA",
+}
+
 export interface ServingCellInfo {
-  networkStatus: string
-  accessTechnology: string
-  duplexMode: string
-  mobileCountryCode: number
-  mobileNetworkCode: number
-  cellIdentity: string
-  physicalCellId: number
-  earfcn: number
-  frequencyBand: number
-  trackingAreaCode: number
-  referenceSignalPower: number
-  timingAdvance?: number
-  referenceSignalReceivedPower: number
-  referenceSignalReceivedQuality?: number
-  snr?: number
-  uplinkBandwidth?: number
-  downlinkBandwidth?: number
+  state: ServingCellState
+  rat: AccessTechnology
+  mobile_country_code: number
+  mobile_network_code: number
+  area_id: number
+  cell_id: number
+
+  signal_quality_dbm?: number
+  signal_inr_db?: number
+  up_bandwidth_mhz?: number
+  dl_bandwidth_mhz?: number
 }
 
-/**
- * Represents information about a neighboring cell
- */
+export enum NeighborCellType {
+  NEIGHBOUR_CELL = "neighbourcell",
+  NEIGHBOUR_CELL_INTRA = "neighbourcell intra",
+  NEIGHBOUR_CELL_INTER = "neighbourcell inter",
+}
+
 export interface NeighborCellInfo {
-  cellType: string
-  accessTechnology: string
-  earfcn: number
-  physicalCellId?: number
-  signalQuality?: number
-  referenceSignalReceivedPower?: number
-  snr?: number
-  timingAdvance?: number
-  downlinkBandwidth?: number
-  uplinkBandwidth?: number
-  qrxlevmin?: number
-  signalQualityThreshold?: number
-  signalStrengthThreshold?: number
+  cell_type: NeighborCellType
+  rat: AccessTechnology
+
+  /* Sadly only GSM gives us location parameters */
+  mobile_country_code?: number
+  mobile_network_code?: number
+  area_id?: number
+  cell_id?: number
+
+  signal_quality_dbm?: number
+  signal_inr_db?: number
 }
 
-/**
- * Represents overall cell information for a modem, including serving and neighboring cells
- */
 export interface ModemCellInfo {
-  servingCell: ServingCellInfo
-  neighborCells: NeighborCellInfo[]
+  serving_cell: ServingCellInfo
+  neighbor_cells: NeighborCellInfo[]
 }
 
 /**
- * Represents PDP (Packet Data Protocol) configuration information
+ * PDP context related
  */
-export interface PDPInfo {
-  profileId: string
-  protocol: string
-  apn: string
-  ipAddress: string
-  primaryDns?: string
-  secondaryDns?: string
-  ipv6Address?: string
-  status: string
+
+export enum PDPType {
+  IP = "IP",
+  PPP = "PPP",
+  IPV6 = "IPV6",
+  IPV4V6 = "IPV4V6",
+}
+export enum PDPDataCompression {
+  OFF = "0",
+  ON = "1",
+  V42BIS = "2",
 }
 
-/**
- * Represents signal quality metrics for the modem
- */
+export enum PDPHeaderCompression {
+  OFF = "0",
+  ON = "1",
+  RFC1144 = "2",
+  RFC2507 = "3",
+  RFC3095 = "4",
+}
+
+export enum PDPAddressAllocation {
+  NAS = "0",
+  DHCP = "1",
+}
+
+export enum PDPRequestType {
+  NORMAL = "0",
+  EMERGENCY = "1",
+}
+
+export interface PDPContext {
+  context_id: number
+  protocol: PDPType
+  access_point_name: string
+  ip_address: string
+  data_compression: PDPDataCompression
+  header_compression: PDPHeaderCompression
+  ipv6_address: PDPAddressAllocation
+  status: PDPRequestType
+}
+
+/** Signal quality related */
+
 export interface ModemSignalQuality {
-  signalStrength: number
-  bitErrorRate: number
+  signal_strength: number
+  bit_error_rate: number
+}
+
+/** Network related */
+
+export enum OperatorSelectionMode {
+  AUTOMATIC = "0",
+  MANUAL = "1",
+  DEREGISTER = "2",
+  FORMAT_ONLY = "3",
+  MANUAL_AUTOMATIC = "4",
+}
+
+export enum OperatorFormat {
+  LONG = "0",
+  SHORT = "1",
+  NUMERIC = "2",
+}
+
+export enum OperatorAct {
+  GSM = "0",
+  UTRAN = "2",
+  GSM_EGPRS = "3",
+  UTRAN_HSDPA = "4",
+  UTRAN_HSUPA = "5",
+  UTRAN_HSDPA_HSUPA = "6",
+  E_UTRAN = "7",
+  CDMA = "100",
+}
+
+export interface OperatorInfo {
+  mode: OperatorSelectionMode
+  format: OperatorFormat
+  operator: string
+  act: OperatorAct
 }

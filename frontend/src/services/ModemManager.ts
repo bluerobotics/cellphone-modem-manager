@@ -1,122 +1,151 @@
 import axios from 'axios'
-import { ModemDevice, ModemSignalQuality, ModemCellInfo, PDPInfo } from '@/types/ModemManager'
+import {
+  ModemDevice,
+  ModemDeviceDetails,
+  ModemSignalQuality,
+  ModemCellInfo,
+  ModemClockDetails,
+  USBNetMode,
+  PDPContext,
+  OperatorInfo,
+} from '@/types/ModemManager'
 
 const MODEM_MANAGER_V1_API = `/v1.0`
 
 const api = axios.create({
   baseURL: MODEM_MANAGER_V1_API,
+  timeout: 10000,
 })
 
 /**
  * List device descriptor of all connected modems.
  * @returns {Promise<ModemDevice[]>}
  */
-export async function fetchModems(): Promise<ModemDevice[]> {
-  const response = await api.get('/modem', { timeout: 5000 })
+export async function fetch(): Promise<ModemDevice[]> {
+  const response = await api.get('/modem')
   return response.data as ModemDevice[]
 }
 
 /**
- * Get details of a modem by identifier.
- * @param {string} id - Modem ID
- * @returns {Promise<ModemDevice>}
+ * Get details of a modem by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<ModemDeviceDetails>}
  */
-export async function fetchModemByDevice(id: string): Promise<ModemDevice> {
-  const response = await api.get(`/modem/${id}/details`, { timeout: 5000 })
-  return response.data as ModemDevice
+export async function fetchById(modemId: string): Promise<ModemDeviceDetails> {
+  const response = await api.get(`/modem/${modemId}/details`)
+  return response.data as ModemDeviceDetails
 }
 
 /**
- * Get signal strength of a modem by device id.
- * @param {string} id - Modem ID
+ * Get signal strength of a modem by id.
+ * @param {string} modemId - Modem ID
  * @returns {Promise<ModemSignalQuality>}
  */
-export async function fetchSignalStrength(id: string): Promise<ModemSignalQuality> {
-  const response = await api.get(`/modem/${id}/signal`, { timeout: 5000 })
+export async function fetchSignalStrengthById(modemId: string): Promise<ModemSignalQuality> {
+  const response = await api.get(`/modem/${modemId}/signal`)
   return response.data as ModemSignalQuality
 }
 
 /**
- * Get serving cell and neighbors cells information of a modem by device id.
- * @param {string} id - Modem ID
+ * Get serving cell and neighbor cells information of a modem by id.
+ * @param {string} modemId - Modem ID
  * @returns {Promise<ModemCellInfo>}
  */
-export async function fetchServingCellInfo(id: string): Promise<ModemCellInfo> {
-  const response = await api.get(`/modem/${id}/cell`, { timeout: 5000 })
+export async function fetchCellInfoById(modemId: string): Promise<ModemCellInfo> {
+  const response = await api.get(`/modem/${modemId}/cell`)
   return response.data as ModemCellInfo
 }
 
 /**
- * Reboot a modem by device id.
- * @param {string} id - Modem ID
+ * Reboot a modem by id.
+ * @param {string} modemId - Modem ID
  * @returns {Promise<void>}
  */
-export async function rebootModem(id: string): Promise<void> {
-  await api.post(`/modem/${id}/reboot`, null, { timeout: 5000 })
+export async function rebootById(modemId: string): Promise<void> {
+  await api.post(`/modem/${modemId}/reboot`)
 }
 
 /**
- * Get USB mode of a modem by device.
- * @param {string} id - Modem ID
- * @returns {Promise<number>}
- */
-export async function fetchUSBMode(id: string): Promise<number> {
-  const response = await api.get(`/modem/${id}/config/usb_net`, { timeout: 5000 })
-  return response.data as number
-}
-
-/**
- * Set USB mode of a modem by device.
- * @param {string} id - Modem ID
- * @param {string} mode - New USB mode
+ * Reset a modem to factory settings by id.
+ * @param {string} modemId - Modem ID
  * @returns {Promise<void>}
  */
-export async function setUSBMode(id: string, mode: string): Promise<void> {
-  await api.put(`/modem/${id}/config/usb_net/${mode}`, null, { timeout: 5000 })
+export async function resetById(modemId: string): Promise<void> {
+  await api.post(`/modem/${modemId}/reset`)
 }
 
 /**
- * Get PDP information of a modem by device.
- * @param {string} id - Modem ID
- * @returns {Promise<PDPInfo[]>}
+ * Get current clock of a modem by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<ModemClockDetails>}
  */
-export async function fetchPDPInfo(id: string): Promise<PDPInfo[]> {
-  const response = await api.get(`/modem/${id}/pdp`, { timeout: 5000 })
-  return response.data as PDPInfo[]
+export async function fetchClockById(modemId: string): Promise<ModemClockDetails> {
+  const response = await api.get(`/modem/${modemId}/clock`)
+  return response.data as ModemClockDetails
 }
 
 /**
- * Set APN of a profile of a modem by device.
- * @param {string} id - Modem ID
+ * Get USB network mode of a modem by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<USBNetMode>}
+ */
+export async function fetchUSBModeById(modemId: string): Promise<USBNetMode> {
+  const response = await api.get(`/modem/${modemId}/config/usb_net`)
+  return response.data as USBNetMode
+}
+
+/**
+ * Set USB network mode of a modem by id.
+ * @param {string} modemId - Modem ID
+ * @param {USBNetMode} mode - USB network mode
+ * @returns {Promise<void>}
+ */
+export async function setUSBModeById(modemId: string, mode: USBNetMode): Promise<void> {
+  await api.put(`/modem/${modemId}/config/usb_net/${mode}`)
+}
+
+/**
+ * Get PDP context information of a modem by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<PDPContext[]>}
+ */
+export async function fetchPDPInfoById(modemId: string): Promise<PDPContext[]> {
+  const response = await api.get(`/modem/${modemId}/pdp`)
+  return response.data as PDPContext[]
+}
+
+/**
+ * Get operator information of a modem by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<OperatorInfo>}
+ */
+export async function fetchOperatorInfoById(modemId: string): Promise<OperatorInfo> {
+  const response = await api.get(`/modem/${modemId}/operator`)
+  return response.data as OperatorInfo
+}
+
+/**
+ * Set APN of a profile by modem id.
+ * @param {string} modemId - Modem ID
  * @param {number} profile - Profile ID
- * @param {string} apn - APN to set
+ * @param {string} apn - Access Point Name
  * @returns {Promise<void>}
  */
-export async function setAPNByProfile(id: string, profile: number, apn: string): Promise<void> {
-  await api.put(`/modem/${id}/pdp/${profile}apn/${apn}`, null, { timeout: 5000 })
-}
-
-/**
- * Ping a server by modem device ID, be careful that this can take a long time, and serial is blocked. So, other
- * requests will be blocked until this request is finished.
- * @param {string} device - Modem device ID
- * @param {string} server - Server address to ping
- * @returns {Promise<number>}
- */
-export async function pingServerByDevice(device: string, server: string): Promise<number> {
-  const response = await api.get(`/modem/${device}/ping/${server}`, { timeout: 5000 })
-  return response.data as number
+export async function setAPNByProfileById(modemId: string, profile: number, apn: string): Promise<void> {
+  await api.put(`/modem/${modemId}/pdp/${profile}apn/${apn}`)
 }
 
 export default {
-  fetchModems,
-  fetchModemByDevice,
-  fetchSignalStrength,
-  fetchServingCellInfo,
-  rebootModem,
-  fetchUSBMode,
-  setUSBMode,
-  fetchPDPInfo,
-  setAPNByProfile,
-  pingServerByDevice,
+  fetch,
+  fetchById,
+  fetchSignalStrengthById,
+  fetchCellInfoById,
+  rebootById,
+  resetById,
+  fetchClockById,
+  fetchUSBModeById,
+  setUSBModeById,
+  fetchPDPInfoById,
+  fetchOperatorInfoById,
+  setAPNByProfileById,
 }
