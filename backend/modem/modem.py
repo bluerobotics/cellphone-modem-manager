@@ -1,19 +1,24 @@
 import abc
 import hashlib
-from typing import List, Optional, Type
+import re
+from functools import wraps
+from typing import Any, Callable, List, Optional, Type, Self
 
 from serial.tools.list_ports_linux import SysFS
 
-from modem.at import ATCommander
+from modem.at import ATCommander, ATDivider, ATCommand
 from modem.exceptions import InvalidModemDevice
 from modem.models import (
     ModemDeviceDetails,
     ModemCellInfo,
+    ModemClockDetails,
+    ModemFirmwareRevision,
     ModemSignalQuality,
+    OperatorInfo,
     PDPContext,
-    USBNetMode
+    USBNetMode,
 )
-from utils import get_modem_descriptors
+from utils import arr_to_model, get_modem_descriptors
 
 
 class Modem(abc.ABC):
@@ -51,9 +56,59 @@ class Modem(abc.ABC):
     def at_commander(self) -> ATCommander:
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def reboot(self) -> None:
-        raise NotImplementedError
+    @staticmethod
+    def with_at_commander(func: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(func)
+        def wrapper(self: Self, *args: Any, **kwargs: Any) -> Any:
+            with self.at_commander() as cmd:
+                return func(self, cmd, *args, **kwargs)
+        return wrapper  # type: ignore
+
+    # Common AT commands, we supply a basic implementation for all modems but can be overridden if needed by device
+
+    @with_at_commander
+    def reboot(self, cmd: ATCommander) -> None:
+        cmd.reboot_modem()
+
+    @with_at_commander
+    def factory_reset(self, cmd: ATCommander) -> None:
+        cmd.reset_to_factory()
+
+    @with_at_commander
+    def get_pdp_info(self, cmd: ATCommander) -> List[PDPContext]:
+        response = cmd.get_pdp_info()
+
+        return [
+            arr_to_model(info, PDPContext)
+            for info in response.data
+        ]
+
+    @with_at_commander
+    def get_operator_info(self, cmd: ATCommander) -> OperatorInfo:
+        return arr_to_model(cmd.get_operator_info().data[0], OperatorInfo)
+
+    @with_at_commander
+    def get_signal_strength(self, cmd: ATCommander) -> ModemSignalQuality:
+        response = cmd.get_signal_strength()
+
+        return arr_to_model(response.data[0], ModemSignalQuality)
+
+    @with_at_commander
+    def set_apn(self, cmd: ATCommander, profile: int, apn: str) -> None:
+        cmd.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.EQ, f'{profile},"IP","{apn}"', cmd_id_response=False)
+
+    @with_at_commander
+    def get_clock(self, cmd: ATCommander) -> ModemClockDetails:
+        response = cmd.get_clock().data[0]
+        time_str = re.match(r"(\d{2}:\d{2}:\d{2})([-+]\d{2})", response[1])
+
+        return ModemClockDetails(
+            date=response[0],
+            time=time_str.group(1),
+            gmt_offset=int(time_str.group(2)),
+        )
+
+    # Abstract and must be implemented by device class
 
     @abc.abstractmethod
     def get_mt_info(self) -> ModemDeviceDetails:
@@ -68,19 +123,7 @@ class Modem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_pdp_info(self) -> List[PDPContext]:
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def get_cell_info(self) -> ModemCellInfo:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_signal_strength(self) -> ModemSignalQuality:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def set_apn(self, profile: int, apn: str) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod

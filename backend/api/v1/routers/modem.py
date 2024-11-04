@@ -5,8 +5,10 @@ from modem import Modem
 from modem.models import (
     ModemDevice,
     ModemDeviceDetails,
+    ModemClockDetails,
     ModemSignalQuality,
     ModemCellInfo,
+    OperatorInfo,
     PDPContext,
     USBNetMode
 )
@@ -47,9 +49,9 @@ async def fetch_by_id(modem_id: str) -> ModemDeviceDetails:
 
 
 @modem_router_v1.get("/{modem_id}/signal", status_code=status.HTTP_200_OK)
-async def fetch_signal_strength(modem_id: str) -> ModemSignalQuality:
+async def fetch_signal_strength_by_id(modem_id: str) -> ModemSignalQuality:
     """
-    Get signal strength of a modem by device id.
+    Get signal strength of a modem by modem id.
     """
     modem = Modem.get_device(modem_id)
 
@@ -57,9 +59,9 @@ async def fetch_signal_strength(modem_id: str) -> ModemSignalQuality:
 
 
 @modem_router_v1.get("/{modem_id}/cell", status_code=status.HTTP_200_OK)
-async def fetch_serving_cell_info(modem_id: str) -> ModemCellInfo:
+async def fetch_serving_cell_info_by_id(modem_id: str) -> ModemCellInfo:
     """
-    Get serving cell and neighbors cells information of a modem by device id.
+    Get serving cell and neighbors cells information of a modem by modem id.
     """
     modem = Modem.get_device(modem_id)
 
@@ -69,48 +71,78 @@ async def fetch_serving_cell_info(modem_id: str) -> ModemCellInfo:
 @modem_router_v1.post("/{modem_id}/reboot", status_code=status.HTTP_204_NO_CONTENT)
 async def reboot_by_id(modem_id: str) -> None:
     """
-    Reboot a modem by device id.
+    Reboot a modem by modem id.
     """
     modem = Modem.get_device(modem_id)
 
     return modem.reboot()
 
 
-@modem_router_v1.get("/{id}/config/usb_net", status_code=status.HTTP_200_OK)
-async def fetch_usb_mode(id: str) -> USBNetMode:
+@modem_router_v1.post("/{modem_id}/reset", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_by_id(modem_id: str) -> None:
     """
-    Get USB mode of a modem by device.
+    Reset a modem to factory settings by modem id. Make sure you know what you are doing.
     """
-    modem = Modem.get_device(id)
+    modem = Modem.get_device(modem_id)
+
+    return modem.factory_reset()
+
+
+@modem_router_v1.get("/{modem_id}/clock", status_code=status.HTTP_200_OK)
+async def fetch_clock_by_id(modem_id: str) -> ModemClockDetails:
+    """
+    Return the current clock of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return modem.get_clock()
+
+
+@modem_router_v1.get("/{modem_id}/config/usb_net", status_code=status.HTTP_200_OK)
+async def fetch_usb_mode_by_id(modem_id: str) -> USBNetMode:
+    """
+    Get USB mode of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
 
     return modem.get_usb_net_mode()
 
 
-@modem_router_v1.put("/{id}/config/usb_net/{mode}", status_code=status.HTTP_204_NO_CONTENT)
-async def set_usb_mode(id: str, mode: USBNetMode) -> None:
+@modem_router_v1.put("/{modem_id}/config/usb_net/{mode}", status_code=status.HTTP_204_NO_CONTENT)
+async def set_usb_mode_by_id(modem_id: str, mode: USBNetMode) -> None:
     """
-    Set USB mode of a modem by device.
+    Set USB mode of a modem by modem id.
     """
-    modem = Modem.get_device(id)
+    modem = Modem.get_device(modem_id)
 
     return modem.set_usb_net_mode(mode)
 
 
-@modem_router_v1.get("/{id}/pdp", status_code=status.HTTP_200_OK)
-async def fetch_pdp_info(id: str) -> list[PDPContext]:
+@modem_router_v1.get("/{modem_id}/pdp", status_code=status.HTTP_200_OK)
+async def fetch_pdp_info_by_id(modem_id: str) -> list[PDPContext]:
     """
-    Get PDP information of a modem by device.
+    Get PDP information of a modem by modem id.
     """
-    modem = Modem.get_device(id)
+    modem = Modem.get_device(modem_id)
 
     return modem.get_pdp_info()
 
 
-@modem_router_v1.put("/{id}/pdp/{profile}apn/{apn}", status_code=status.HTTP_204_NO_CONTENT)
-async def set_apn_by_profile(id: str, profile: int, apn: str) -> None:
+@modem_router_v1.get("/{modem_id}/operator", status_code=status.HTTP_200_OK)
+async def fetch_operator_info_by_id(modem_id: str) -> OperatorInfo:
     """
-    Set APN of a profile of a modem by device.
+    Get PDP information of a modem by modem id.
     """
-    modem = Modem.get_device(id)
+    modem = Modem.get_device(modem_id)
+
+    return modem.get_operator_info()
+
+
+@modem_router_v1.put("/{modem_id}/pdp/{profile}apn/{apn}", status_code=status.HTTP_204_NO_CONTENT)
+async def set_apn_by_profile_by_id(modem_id: str, profile: int, apn: str) -> None:
+    """
+    Set APN of a profile of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
 
     return modem.set_apn(profile, apn)

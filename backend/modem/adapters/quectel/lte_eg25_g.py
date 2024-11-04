@@ -1,21 +1,19 @@
 import time
-from functools import wraps
-from typing import Any, Callable, List, cast
+from typing import cast
 
-from modem.at import ATCommand, ATCommander, ATDivider
+from modem.adapters.quectel.at import QuectelATCommand
+from modem.adapters.quectel.models import BaseServingCell, BaseNeighborCell
+from modem.at import ATCommander, ATDivider
 from modem.exceptions import ATConnectionError, ATConnectionTimeout
 from modem.models import (
     AccessTechnology,
     ModemDeviceDetails,
+    ModemFirmwareRevision,
     ModemCellInfo,
-    ModemSignalQuality,
     NeighborCellType,
-    PDPContext,
     USBNetMode,
 )
 from modem.modem import Modem
-from modem.adapters.quectel.at import QuectelATCommand
-from modem.adapters.quectel.models import BaseServingCell, BaseNeighborCell
 from utils import arr_to_model
 
 
@@ -48,62 +46,53 @@ class LTEEG25G(Modem):
             raise ATConnectionError(f"Unable to detect any AT port for device {self.device}")
         raise ATConnectionTimeout(f"Timeout reached trying to connect to device {self.device}")
 
-    @staticmethod
-    def with_at_commander(func: Callable[..., Any]) -> Callable[..., Any]:
-        @wraps(func)
-        def wrapper(self: "LTEEG25G", *args: Any, **kwargs: Any) -> Any:
-            with self.at_commander() as cmd:
-                return func(self, cmd, *args, **kwargs)
-        return wrapper  # type: ignore
-
-    @with_at_commander
-    def reboot(self, cmd: ATCommander) -> None:
-        cmd.reboot_modem()
-
-    @with_at_commander
+    @Modem.with_at_commander
     def get_mt_info(self, cmd: ATCommander) -> ModemDeviceDetails:
+        # Since this modem provides all necessary info in a single command, we can override the default.
+        # Expected ATI
         # Quectel
         # EG25
         # Revision: EG25GGBR07A08M2G_BETA0416
         # OK
+        # Expected: AT+CVERSION
+        # VERSION: EG25GGBR07A08M2G_BETA0416
+        # Apr 16 2020 20:32:01
+        # Authors: QCT
+        # OK
         response = cmd.get_mt_info().data[0]
+        firmware = cmd.get_firmware_version_details().data[0]
+        imei = cmd.get_imei().data[0]
+        serial_number = cmd.get_serial_number().data[0]
+        imsi = cmd.get_international_mobile_subscriber_id().data[0]
 
         return ModemDeviceDetails(
             device=self.device,
             id=self.id,
             manufacturer=response[0],
             product=response[1],
-            firmware_revision=response[2].replace("Revision: ", "")
+            imei=imei[0],
+            imsi=imsi[0],
+            serial_number=serial_number[0],
+            firmware_revision=ModemFirmwareRevision(
+                firmware_revision=firmware[0].replace("VERSION: ", ""),
+                timestamp=firmware[1],
+                authors=firmware[2],
+            )
         )
 
-    @with_at_commander
+    @Modem.with_at_commander
     def get_usb_net_mode(self, cmd: ATCommander) -> USBNetMode:
         # Expected: +QCFG: "usbnet",1
         response = cmd.command(QuectelATCommand.CONFIGURATION, ATDivider.EQ, '"usbnet"')
 
         return USBNetMode(response.data[0][1])
 
-    @with_at_commander
+    @Modem.with_at_commander
     def set_usb_net_mode(self, cmd: ATCommander, mode: USBNetMode) -> None:
         # Expected: OK
         cmd.command(QuectelATCommand.CONFIGURATION, ATDivider.EQ, f'"usbnet",{mode.value}', cmd_id_response=False)
 
-    @with_at_commander
-    def get_pdp_info(self, cmd: ATCommander) -> List[PDPContext]:
-        response = cmd.get_pdp_info()
-
-        return [
-            arr_to_model(info, PDPContext)
-            for info in response.data
-        ]
-
-    @with_at_commander
-    def get_signal_strength(self, cmd: ATCommander) -> ModemSignalQuality:
-        response = cmd.get_signal_strength()
-
-        return arr_to_model(response.data[0], ModemSignalQuality)
-
-    @with_at_commander
+    @Modem.with_at_commander
     def get_cell_info(self, cmd: ATCommander) -> ModemCellInfo:
         serving_cell_data = cmd.command(QuectelATCommand.ENGINEER_MODE, ATDivider.EQ, '"servingcell"').data[0]
         serving_cell_data.pop(0)  # Discard the first element, which is always 'servingcell'
@@ -129,12 +118,7 @@ class LTEEG25G(Modem):
             neighbor_cells=neighbor_cells
         )
 
-    @with_at_commander
-    def set_apn(self, cmd: ATCommander, profile: int, apn: str) -> None:
-        # Expected: OK
-        cmd.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.EQ, f'{profile},"IP","{apn}"', cmd_id_response=False)
-
-    @with_at_commander
+    @Modem.with_at_commander
     def ping(self, cmd: ATCommander, host: str) -> int:
         response = cmd.command(QuectelATCommand.PING, ATDivider.EQ, f'1,"{host}",1,1')
 

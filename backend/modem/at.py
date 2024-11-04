@@ -14,6 +14,9 @@ class ATCommand(Enum):
     MANUFACTURER_IDENTIFICATION = "AT+GMI"
     MODEL_IDENTIFICATION = "AT+GMM"
     FIRMWARE_REV_IDENTIFICATION = "AT+GMR"
+    FIRMWARE_VERSION_DETAILS = "AT+CVERSION"
+    IMEI_SN = "AT+CGSN"
+    IMSI = "AT+CIMI"
     SET_ECHO_MODE = "ATE"
     SET_CMD_LINE_TERM = "ATS3"
     SET_RESP_FORMAT_CHAR = "ATS4"
@@ -97,7 +100,11 @@ class ATCommander:
             data = [
                 [
                     piece if piece != '-' else None
-                    for piece in part.split(f'{cmd_id_response}: ')[1].replace('"', '').split(',')
+                    for piece in part
+                        .replace(f'{cmd_id_response}: ', f'{cmd_id_response}:')
+                        .split(f'{cmd_id_response}:')[1]
+                        .replace('"', '')
+                        .split(',')
                 ]
                 for part in parts
                 if cmd_id_response in part
@@ -179,13 +186,34 @@ class ATCommander:
         return response.status == ATResultCode.OK
 
     def get_mt_info(self) -> ATResponse:
-        return self.command(ATCommand.ATI)
+        return self.command(ATCommand.ATI, cmd_id_response=False)
+
+    def get_manufacturer_info(self) -> ATResponse:
+        return self.command(ATCommand.MANUFACTURER_IDENTIFICATION, cmd_id_response=False)
+
+    def get_model_info(self) -> ATResponse:
+        return self.command(ATCommand.MODEL_IDENTIFICATION, cmd_id_response=False)
+
+    def get_firmware_info(self) -> ATResponse:
+        return self.command(ATCommand.FIRMWARE_REV_IDENTIFICATION, cmd_id_response=False)
+
+    def get_firmware_version_details(self) -> ATResponse:
+        return self.command(ATCommand.FIRMWARE_VERSION_DETAILS, cmd_id_response=False)
 
     def get_signal_strength(self) -> ATResponse:
         return self.command(ATCommand.CHECK_SIGNAL_QUALITY)
 
-    def get_network_info(self) -> ATResponse:
+    def get_operator_info(self) -> ATResponse:
         return self.command(ATCommand.CONFIGURE_OPERATOR, ATDivider.QUESTION)
+
+    def get_serial_number(self) -> ATResponse:
+        return self.command(ATCommand.IMEI_SN, ATDivider.EQ, '0')
+
+    def get_imei(self) -> ATResponse:
+        return self.command(ATCommand.IMEI_SN, ATDivider.EQ, '1')
+
+    def get_international_mobile_subscriber_id(self) -> ATResponse:
+        return self.command(ATCommand.IMSI, cmd_id_response=False)
 
     def get_pdp_info(self) -> ATResponse:
         return self.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.QUESTION)
@@ -200,4 +228,4 @@ class ATCommander:
         return self.command(ATCommand.CONFIGURE_FUNCTIONALITY, ATDivider.EQ, '0,1', cmd_id_response=False)
 
     def reset_to_factory(self) -> ATResponse:
-        return self.command(ATCommand.RESET_TO_FACTORY)
+        return self.command(ATCommand.RESET_TO_FACTORY, ATDivider.UNDEFINED, '0', cmd_id_response=False)

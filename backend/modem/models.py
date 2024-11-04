@@ -12,8 +12,23 @@ class ModemDevice(BaseModel):
     product: str
 
 
-class ModemDeviceDetails(ModemDevice):
+class ModemFirmwareRevision(BaseModel):
     firmware_revision: str
+    timestamp: Optional[str] = None
+    authors: Optional[str] = None
+
+
+class ModemDeviceDetails(ModemDevice):
+    imei: str
+    serial_number: str
+    imsi: Optional[str] = None
+    firmware_revision: ModemFirmwareRevision
+
+
+class ModemClockDetails(BaseModel):
+    date: str
+    time: str
+    gmt_offset: int
 
 # Configurations related
 
@@ -125,3 +140,36 @@ class PDPContext(BaseModel):
 class ModemSignalQuality(BaseModel):
     signal_strength: int
     bit_error_rate: int
+
+# Network related
+
+class OperatorSelectionMode(Enum):
+    AUTOMATIC = "0"
+    MANUAL = "1"
+    DEREGISTER = "2"
+    FORMAT_ONLY = "3"
+    MANUAL_AUTOMATIC = "4"
+
+
+class OperatorFormat(Enum):
+    LONG = "0"
+    SHORT = "1"
+    NUMERIC = "2"
+
+
+class OperatorAct(Enum):
+    GSM = "0"
+    UTRAN = "2"
+    GSM_EGPRS = "3"
+    UTRAN_HSDPA = "4"
+    UTRAN_HSUPA = "5"
+    UTRAN_HSDPA_HSUPA = "6"
+    E_UTRAN = "7"
+    CDMA = "100"
+
+
+class OperatorInfo(BaseModel):
+    mode: OperatorSelectionMode
+    format: OperatorFormat
+    operator: str
+    act: OperatorAct
