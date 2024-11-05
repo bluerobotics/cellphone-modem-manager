@@ -1,4 +1,10 @@
+**/node_modules
+node_modules
+
+# Bug in NPM that fails build when using lock
+**/bun.lockb
+**/package-lock.json
+
 .venv
-.node-modules
 build
 dist
