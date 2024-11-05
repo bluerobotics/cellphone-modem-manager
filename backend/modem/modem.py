@@ -2,7 +2,7 @@ import abc
 import hashlib
 import re
 from functools import wraps
-from typing import Any, Callable, List, Optional, Type, Self
+from typing import Any, Callable, List, Optional, Type, Self, cast
 
 from serial.tools.list_ports_linux import SysFS
 
@@ -89,9 +89,14 @@ class Modem(abc.ABC):
 
     @with_at_commander
     def get_signal_strength(self, cmd: ATCommander) -> ModemSignalQuality:
-        response = cmd.get_signal_strength()
+        data = cast(
+            ModemSignalQuality,
+            arr_to_model(cmd.get_signal_strength().data[0], ModemSignalQuality)
+        )
 
-        return arr_to_model(response.data[0], ModemSignalQuality)
+        data.signal_strength_dbm = 2 * data.signal_strength_dbm - 113
+
+        return data
 
     @with_at_commander
     def set_apn(self, cmd: ATCommander, profile: int, apn: str) -> None:

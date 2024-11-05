@@ -17,7 +17,7 @@ def get_modem_descriptors() -> Dict[str, List[SysFS]]:
     return modem_ports
 
 
-def arr_to_model(array: List[Any], model: Type) -> List[Any]:
+def arr_to_model(array: List[Any], model: Type) -> Any:
     """
     Converts an array to a pydantic model by adding None values to the end of the array.
     """
