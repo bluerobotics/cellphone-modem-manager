@@ -138,7 +138,7 @@ class PDPContext(BaseModel):
 # Signal quality related
 
 class ModemSignalQuality(BaseModel):
-    signal_strength: int
+    signal_strength_dbm: int
     bit_error_rate: int
 
 # Network related
