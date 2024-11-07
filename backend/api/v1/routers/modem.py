@@ -1,17 +1,22 @@
-from fastapi import APIRouter, status
+from functools import wraps
+from typing import Any, Callable, Tuple
+
+from fastapi import APIRouter, HTTPException, status
 from fastapi_versioning import versioned_api_route
 
 from modem import Modem
+from modem.exceptions import ATConnectionTimeout, InvalidModemDevice
 from modem.models import (
+    ModemCellInfo,
+    ModemClockDetails,
     ModemDevice,
     ModemDeviceDetails,
-    ModemClockDetails,
     ModemSignalQuality,
-    ModemCellInfo,
     OperatorInfo,
     PDPContext,
-    USBNetMode
+    USBNetMode,
 )
+
 
 modem_router_v1 = APIRouter(
     prefix="/modem",
@@ -21,7 +26,25 @@ modem_router_v1 = APIRouter(
 )
 
 
+def modem_to_http_exception(endpoint: Callable[..., Any]) -> Callable[..., Any]:
+    @wraps(endpoint)
+    async def wrapper(*args: Tuple[Any], **kwargs: dict[str, Any]) -> Any:
+        try:
+            return await endpoint(*args, **kwargs)
+        except HTTPException as error:
+            raise error
+        except InvalidModemDevice as error:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+        except ATConnectionTimeout as error:
+            raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT, detail=str(error)) from error
+        except Exception as error:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(error)) from error
+
+    return wrapper
+
+
 @modem_router_v1.get("/", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch() -> list[ModemDevice]:
     """
     List device descriptor of all connected modems.
@@ -39,6 +62,7 @@ async def fetch() -> list[ModemDevice]:
 
 
 @modem_router_v1.get("/{modem_id}/details", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch_by_id(modem_id: str) -> ModemDeviceDetails:
     """
     Get details of a modem by id.
@@ -49,6 +73,7 @@ async def fetch_by_id(modem_id: str) -> ModemDeviceDetails:
 
 
 @modem_router_v1.get("/{modem_id}/signal", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch_signal_strength_by_id(modem_id: str) -> ModemSignalQuality:
     """
     Get signal strength of a modem by modem id.
@@ -59,6 +84,7 @@ async def fetch_signal_strength_by_id(modem_id: str) -> ModemSignalQuality:
 
 
 @modem_router_v1.get("/{modem_id}/cell", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch_serving_cell_info_by_id(modem_id: str) -> ModemCellInfo:
     """
     Get serving cell and neighbors cells information of a modem by modem id.
@@ -69,6 +95,7 @@ async def fetch_serving_cell_info_by_id(modem_id: str) -> ModemCellInfo:
 
 
 @modem_router_v1.post("/{modem_id}/reboot", status_code=status.HTTP_204_NO_CONTENT)
+@modem_to_http_exception
 async def reboot_by_id(modem_id: str) -> None:
     """
     Reboot a modem by modem id.
@@ -79,6 +106,7 @@ async def reboot_by_id(modem_id: str) -> None:
 
 
 @modem_router_v1.post("/{modem_id}/reset", status_code=status.HTTP_204_NO_CONTENT)
+@modem_to_http_exception
 async def reset_by_id(modem_id: str) -> None:
     """
     Reset a modem to factory settings by modem id. Make sure you know what you are doing.
@@ -89,6 +117,7 @@ async def reset_by_id(modem_id: str) -> None:
 
 
 @modem_router_v1.get("/{modem_id}/clock", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch_clock_by_id(modem_id: str) -> ModemClockDetails:
     """
     Return the current clock of a modem by modem id.
@@ -99,6 +128,7 @@ async def fetch_clock_by_id(modem_id: str) -> ModemClockDetails:
 
 
 @modem_router_v1.get("/{modem_id}/config/usb_net", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch_usb_mode_by_id(modem_id: str) -> USBNetMode:
     """
     Get USB mode of a modem by modem id.
@@ -109,6 +139,7 @@ async def fetch_usb_mode_by_id(modem_id: str) -> USBNetMode:
 
 
 @modem_router_v1.put("/{modem_id}/config/usb_net/{mode}", status_code=status.HTTP_204_NO_CONTENT)
+@modem_to_http_exception
 async def set_usb_mode_by_id(modem_id: str, mode: USBNetMode) -> None:
     """
     Set USB mode of a modem by modem id.
@@ -119,6 +150,7 @@ async def set_usb_mode_by_id(modem_id: str, mode: USBNetMode) -> None:
 
 
 @modem_router_v1.get("/{modem_id}/pdp", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch_pdp_info_by_id(modem_id: str) -> list[PDPContext]:
     """
     Get PDP information of a modem by modem id.
@@ -129,6 +161,7 @@ async def fetch_pdp_info_by_id(modem_id: str) -> list[PDPContext]:
 
 
 @modem_router_v1.get("/{modem_id}/operator", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
 async def fetch_operator_info_by_id(modem_id: str) -> OperatorInfo:
     """
     Get PDP information of a modem by modem id.
@@ -139,6 +172,7 @@ async def fetch_operator_info_by_id(modem_id: str) -> OperatorInfo:
 
 
 @modem_router_v1.put("/{modem_id}/pdp/{profile}apn/{apn}", status_code=status.HTTP_204_NO_CONTENT)
+@modem_to_http_exception
 async def set_apn_by_profile_by_id(modem_id: str, profile: int, apn: str) -> None:
     """
     Set APN of a profile of a modem by modem id.
