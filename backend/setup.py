@@ -25,6 +25,7 @@ setup(
         "uvicorn==0.32.0",
         # This is needed for commonwealth since PIP does not fetch dependency link automatically
         "pykson @ https://github.com/patrickelectric/pykson/tarball/1.0.2#egg=pykson-1.0.2",
-        "commonwealth @ https://github.com/bluerobotics/BlueOS/archive/refs/tags/1.3.0.tar.gz#subdirectory=core/libs/commonwealth",
+        # TODO - Change to a fixed tag as soon new commonwealth changes are released
+        "commonwealth @ https://github.com/bluerobotics/BlueOS/archive/refs/heads/master.zip#subdirectory=core/libs/commonwealth",
     ],
 )
