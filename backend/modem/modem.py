@@ -12,8 +12,8 @@ from modem.models import (
     ModemDeviceDetails,
     ModemCellInfo,
     ModemClockDetails,
-    ModemFirmwareRevision,
     ModemSignalQuality,
+    ModemSIMStatus,
     OperatorInfo,
     PDPContext,
     USBNetMode,
@@ -129,6 +129,10 @@ class Modem(abc.ABC):
 
     @abc.abstractmethod
     def get_cell_info(self) -> ModemCellInfo:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_sim_status(self) -> ModemSIMStatus:
         raise NotImplementedError
 
     @abc.abstractmethod

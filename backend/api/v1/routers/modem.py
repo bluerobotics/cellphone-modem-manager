@@ -12,6 +12,7 @@ from modem.models import (
     ModemDevice,
     ModemDeviceDetails,
     ModemSignalQuality,
+    ModemSIMStatus,
     OperatorInfo,
     PDPContext,
     USBNetMode,
@@ -125,6 +126,17 @@ async def fetch_clock_by_id(modem_id: str) -> ModemClockDetails:
     modem = Modem.get_device(modem_id)
 
     return modem.get_clock()
+
+
+@modem_router_v1.get("/{modem_id}/sim_status", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
+async def fetch_sim_status_by_id(modem_id: str) -> ModemSIMStatus:
+    """
+    Get SIM status of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return modem.get_sim_status()
 
 
 @modem_router_v1.get("/{modem_id}/config/usb_net", status_code=status.HTTP_200_OK)

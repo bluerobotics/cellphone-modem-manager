@@ -30,6 +30,12 @@ class ModemClockDetails(BaseModel):
     time: str
     gmt_offset: int
 
+
+class ModemSIMStatus(Enum):
+    DISCONNECTED = "0"
+    CONNECTED = "1"
+    UNKNOWN = "2"
+
 # Configurations related
 
 class USBNetMode(Enum):

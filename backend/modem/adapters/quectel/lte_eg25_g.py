@@ -10,6 +10,7 @@ from modem.models import (
     ModemDeviceDetails,
     ModemFirmwareRevision,
     ModemCellInfo,
+    ModemSIMStatus,
     NeighborCellType,
     USBNetMode,
 )
@@ -117,6 +118,12 @@ class LTEEG25G(Modem):
             serving_cell=serving_cell.info(),
             neighbor_cells=neighbor_cells
         )
+
+    @Modem.with_at_commander
+    def get_sim_status(self, cmd: ATCommander) -> ModemSIMStatus:
+        response = cmd.command(QuectelATCommand.SIM_STATUS, ATDivider.QUESTION)
+
+        return ModemSIMStatus(response.data[0][1])
 
     @Modem.with_at_commander
     def ping(self, cmd: ATCommander, host: str) -> int:
