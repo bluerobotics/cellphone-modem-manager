@@ -6,3 +6,4 @@ class QuectelATCommand(Enum):
     CONFIGURATION = "AT+QCFG"
     ENGINEER_MODE = "AT+QENG"
     PING= "AT+QPING"
+    SIM_STATUS = "AT+QSIMSTAT"
