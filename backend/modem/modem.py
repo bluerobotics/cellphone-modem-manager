@@ -2,8 +2,11 @@ import abc
 import hashlib
 import re
 from functools import wraps
-from typing import Any, Callable, List, Optional, Type, Self, cast
+from typing import Any, Callable, List, Optional, Tuple, Type, Self, cast
 
+from commonwealth.settings.manager import PydanticManager
+from config import SERVICE_NAME
+from settings import SettingsV1, DataUsageSettings, ModemsSettings
 from serial.tools.list_ports_linux import SysFS
 
 from modem.at import ATCommander, ATDivider, ATCommand
@@ -22,6 +25,12 @@ from utils import arr_to_model, get_modem_descriptors
 
 
 class Modem(abc.ABC):
+    _manager: PydanticManager = PydanticManager(SERVICE_NAME, SettingsV1)
+
+    @property
+    def _settings(self) -> SettingsV1:
+        return cast(SettingsV1, self._manager.settings)
+
     @staticmethod
     def connected_devices() -> List["Modem"]:
         descriptors = get_modem_descriptors()
@@ -64,7 +73,42 @@ class Modem(abc.ABC):
                 return func(self, cmd, *args, **kwargs)
         return wrapper  # type: ignore
 
+    def _fetch_modem_settings(self, imei: str) -> ModemsSettings:
+        modem: Optional[ModemsSettings] = self._settings.modems.get(imei, None)
+
+        if not modem:
+            modem = ModemsSettings(
+                identifier=imei,
+                configured=False,
+                data_usage=DataUsageSettings(),
+            )
+
+        return modem
+
+    def _save_modem_settings(self, modem: ModemsSettings) -> None:
+        self._settings.modems[modem.identifier] = modem
+        self._manager.save()
+
     # Common AT commands, we supply a basic implementation for all modems but can be overridden if needed by device
+
+    @with_at_commander
+    def set_data_usage_alert(self, cmd: ATCommander, total_bytes: int) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(cmd.get_imei().data[0][0])
+        modem.data_usage.data_limit = total_bytes
+        self._save_modem_settings(modem)
+        return cast(DataUsageSettings, modem.data_usage)
+
+    @with_at_commander
+    def set_data_usage_reset_day(self, cmd: ATCommander, month_day: int) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(cmd.get_imei().data[0][0])
+        modem.data_usage.data_reset_day = month_day
+        self._save_modem_settings(modem)
+        return cast(DataUsageSettings, modem.data_usage)
+
+    @with_at_commander
+    def get_data_usage_details(self, cmd: ATCommander) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(cmd.get_imei().data[0][0])
+        return cast(DataUsageSettings, modem.data_usage)
 
     @with_at_commander
     def reboot(self, cmd: ATCommander) -> None:
@@ -133,6 +177,18 @@ class Modem(abc.ABC):
 
     @abc.abstractmethod
     def get_sim_status(self) -> ModemSIMStatus:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_auto_data_usage_save(self, interval: int) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def reset_data_usage(self) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_data_usage(self) -> Tuple[int, int]:
         raise NotImplementedError
 
     @abc.abstractmethod

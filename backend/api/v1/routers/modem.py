@@ -17,6 +17,7 @@ from modem.models import (
     PDPContext,
     USBNetMode,
 )
+from settings import DataUsageSettings
 
 
 modem_router_v1 = APIRouter(
@@ -192,3 +193,36 @@ async def set_apn_by_profile_by_id(modem_id: str, profile: int, apn: str) -> Non
     modem = Modem.get_device(modem_id)
 
     return modem.set_apn(profile, apn)
+
+
+@modem_router_v1.get("/{modem_id}/usage/details", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
+async def fetch_data_usage_by_id(modem_id: str) -> DataUsageSettings:
+    """
+    Get data usage details of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return modem.get_data_usage_details()
+
+
+@modem_router_v1.put("/{modem_id}/usage/alert/{total_bytes}", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
+async def set_data_usage_alert_by_id(modem_id: str, total_bytes: int) -> DataUsageSettings:
+    """
+    Set data usage alert of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return modem.set_data_usage_alert(total_bytes)
+
+
+@modem_router_v1.put("/{modem_id}/usage/reset/{month_day}", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
+async def set_data_usage_reset_day(modem_id: str, month_day: int) -> DataUsageSettings:
+    """
+    Set day in month where data usage counter will be reset.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return modem.set_data_usage_reset_day(month_day)

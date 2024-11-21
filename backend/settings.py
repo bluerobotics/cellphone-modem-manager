@@ -3,17 +3,21 @@ from typing import Any, Dict, List, Tuple
 from pydantic import BaseModel
 
 from commonwealth.settings.settings import PydanticSettings
-from cells.models import CellLocation
+
+class CellLocationSettings(BaseModel):
+    latitude: float
+    longitude: float
+    range: int
 
 
 class DataUsageSettings(BaseModel):
-    data_limit: int
+    data_limit: int = 0
     # The day of the month when the data usage resets
-    data_reset_day: int
+    data_reset_day: int = 0
     # RX and TX data used in bytes
-    data_used: Tuple[int, int]
+    data_used: Tuple[int, int] = (0, 0)
     # List of data points from last data_reset_day to now
-    data_points: List[Tuple[int, int]]
+    data_points: List[Tuple[int, int]] = []
 
 
 class ModemsSettings(BaseModel):
@@ -24,7 +28,7 @@ class ModemsSettings(BaseModel):
 
 class SettingsV1(PydanticSettings):
     # We store seen cells in dict with keys mcc, mnc, lac, cell_id
-    seen_cells: Dict[int, Dict[int, Dict[int, Dict[int, CellLocation]]]] = {}
+    seen_cells: Dict[int, Dict[int, Dict[int, Dict[int, CellLocationSettings]]]] = {}
     modems: Dict[str, ModemsSettings] = {}
 
     def migrate(self, data: Dict[str, Any]) -> None:
