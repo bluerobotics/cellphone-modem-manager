@@ -1,5 +1,5 @@
 import time
-from typing import cast
+from typing import Tuple, cast
 
 from modem.adapters.quectel.at import QuectelATCommand
 from modem.adapters.quectel.models import BaseServingCell, BaseNeighborCell
@@ -130,3 +130,21 @@ class LTEEG25G(Modem):
         response = cmd.command(QuectelATCommand.PING, ATDivider.EQ, f'1,"{host}",1,1')
 
         return int(response.data[0][0])
+
+    @Modem.with_at_commander
+    def set_auto_data_usage_save(self, cmd: ATCommander, interval: int = 60) -> None:
+        cmd.command(QuectelATCommand.AUTO_PACKET_DATA_COUNTER, ATDivider.EQ, f"{interval}")
+
+    @Modem.with_at_commander
+    def reset_data_usage(self, cmd: ATCommander) -> None:
+        cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.EQ, "0")
+        cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.EQ, "1")
+
+    @Modem.with_at_commander
+    def get_data_usage(self, cmd: ATCommander) -> Tuple[int, int]:
+        response = cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.QUESTION)
+
+        return (
+            int(response.data[0][0]),
+            int(response.data[0][1])
+        )

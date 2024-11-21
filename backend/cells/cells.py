@@ -2,13 +2,10 @@ from typing import Any, Dict, Optional, cast
 
 import aiohttp
 
-from loguru import logger
-
-from cells.models import CellLocation
 from commonwealth.settings.manager import PydanticManager
 from commonwealth.utils.Singleton import Singleton
 from config import SERVICE_NAME
-from settings import SettingsV1
+from settings import SettingsV1, CellLocationSettings
 
 
 class CellFetcher(metaclass=Singleton):
@@ -18,7 +15,7 @@ class CellFetcher(metaclass=Singleton):
     def _settings(self) -> SettingsV1:
         return cast(SettingsV1, self._manager.settings)
 
-    def add_to_cache(self, mcc: int, mnc: int, lac: int, cell_id: int, location: CellLocation) -> None:
+    def add_to_cache(self, mcc: int, mnc: int, lac: int, cell_id: int, location: CellLocationSettings) -> None:
         current: Dict = self._settings.seen_cells
         for key in [ mcc, mnc, lac ]:
             if key not in current:
@@ -28,16 +25,16 @@ class CellFetcher(metaclass=Singleton):
 
         self._manager.save()
 
-    def fetch_from_cache(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocation]:
+    def fetch_from_cache(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocationSettings]:
         current: Any = self._settings.seen_cells
         for key in [ mcc, mnc, lac, cell_id ]:
             if current is None:
                 return None
             current = current.get(key)
 
-        return cast(CellLocation, current)
+        return cast(CellLocationSettings, current)
 
-    async def fetch_from_api(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocation]:
+    async def fetch_from_api(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocationSettings]:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -47,7 +44,7 @@ class CellFetcher(metaclass=Singleton):
 
                     data = await resp.json()
 
-                    return CellLocation(
+                    return CellLocationSettings(
                         latitude=data["lat"],
                         longitude=data["lon"],
                         range=data["range"]
@@ -55,12 +52,12 @@ class CellFetcher(metaclass=Singleton):
         except Exception:
             return None
 
-    async def fetch_and_add(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocation]:
-        location: CellLocation = await self.fetch_from_api(mcc, mnc, lac, cell_id)
+    async def fetch_and_add(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocationSettings]:
+        location: CellLocationSettings = await self.fetch_from_api(mcc, mnc, lac, cell_id)
         if location is not None:
             self.add_to_cache(mcc, mnc, lac, cell_id, location)
 
         return location
 
-    async def fetch_cell(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocation]:
+    async def fetch_cell(self, mcc: int, mnc: int, lac: int, cell_id: int) -> Optional[CellLocationSettings]:
         return self.fetch_from_cache(mcc, mnc, lac, cell_id) or await self.fetch_and_add(mcc, mnc, lac, cell_id)

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi_versioning import versioned_api_route
 
-from cells import CellFetcher, CellLocation
+from cells import CellFetcher
+from settings import CellLocationSettings
 
 
 cells_router_v1 = APIRouter(
@@ -20,7 +21,7 @@ async def fetch_cell_coordinate(
     mnc: int = Query(..., description="Mobile Network Code"),
     lac: int = Query(..., description="Location Area Code"),
     cell_id: int = Query(..., description="Cell ID")
-) -> CellLocation:
+) -> CellLocationSettings:
     cell = await cell_fetcher.fetch_cell(mcc, mnc, lac, cell_id)
 
     if not cell:
