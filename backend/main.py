@@ -9,7 +9,9 @@ from args import CommandLineArgs
 from config import SERVICE_NAME
 
 from api import application
+from manager import ModemManager
 
+modem_manager = ModemManager()
 
 if __name__ == "__main__":
     args = CommandLineArgs.from_args()
@@ -23,4 +25,10 @@ if __name__ == "__main__":
     config = Config(app=application, loop=loop, host=args.host, port=args.port, log_config=None)
     server = Server(config)
 
-    loop.run_until_complete(server.serve())
+    modem_manager.start(loop)
+    try:
+        loop.run_until_complete(server.serve())
+    except KeyboardInterrupt as e:
+        logger.info("Shutting down the extension Cellphone Modem Manager by manual interaction.")
+    finally:
+        loop.run_until_complete(modem_manager.stop())
