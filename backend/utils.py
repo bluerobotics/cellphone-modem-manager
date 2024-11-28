@@ -27,3 +27,15 @@ def arr_to_model(array: List[Any], model: Type) -> Any:
     data = array + [None] * (len(model.model_fields) - len(array))
 
     return model(**dict(zip(list(model.model_fields), data)))
+
+
+def string_to_unicode_array(input_string: str, total_length: int) -> List[str]:
+    """
+    Converts a string to a list of unicode characters with a fixed length.
+    """
+    if len(input_string) > total_length:
+        raise ValueError("Input string length must be less than or equal to the total length")
+
+    unicode_array = [str(char) for char in input_string]
+    unicode_array.extend(u"0" * (total_length - len(unicode_array)))
+    return unicode_array
