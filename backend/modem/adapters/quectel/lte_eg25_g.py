@@ -133,7 +133,7 @@ class LTEEG25G(Modem):
 
     @Modem.with_at_commander
     def set_auto_data_usage_save(self, cmd: ATCommander, interval: int = 60) -> None:
-        cmd.command(QuectelATCommand.AUTO_PACKET_DATA_COUNTER, ATDivider.EQ, f"{interval}")
+        cmd.command(QuectelATCommand.AUTO_PACKET_DATA_COUNTER, ATDivider.EQ, f"{interval}", cmd_id_response=False)
 
     @Modem.with_at_commander
     def reset_data_usage(self, cmd: ATCommander) -> None:
@@ -148,3 +148,7 @@ class LTEEG25G(Modem):
             int(response.data[0][0]),
             int(response.data[0][1])
         )
+
+    @Modem.with_at_commander
+    def set_automatic_time_sync(self, cmd: ATCommander, enabled: bool = True) -> None:
+        cmd.command(QuectelATCommand.AUTO_TIME_SYNC, ATDivider.EQ, '1' if enabled else '0', cmd_id_response=False)

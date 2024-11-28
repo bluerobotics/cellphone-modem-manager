@@ -192,5 +192,9 @@ class Modem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def set_automatic_time_sync(self, enabled: bool = True) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def ping(self, host: str) -> int:
         raise NotImplementedError
