@@ -11,9 +11,10 @@ class CellLocationSettings(BaseModel):
 
 
 class DataUsageSettings(BaseModel):
-    data_limit: int = 0
+    # Data limit in bytes, default is 2GB
+    data_limit: int = 2 * 1024 * 1024 * 1024
     # The day of the month when the data usage resets
-    data_reset_day: int = 0
+    data_reset_day: int = 1
     # RX and TX data used in bytes
     data_used: Tuple[int, int] = (0, 0)
     # List of data points from last data_reset_day to now
