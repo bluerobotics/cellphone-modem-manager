@@ -91,23 +91,20 @@ class Modem(abc.ABC):
 
     # Common AT commands, we supply a basic implementation for all modems but can be overridden if needed by device
 
-    @with_at_commander
-    def set_data_usage_alert(self, cmd: ATCommander, total_bytes: int) -> DataUsageSettings:
-        modem = self._fetch_modem_settings(cmd.get_imei().data[0][0])
+    def set_data_usage_alert(self, total_bytes: int) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(self.get_imei())
         modem.data_usage.data_limit = total_bytes
         self._save_modem_settings(modem)
         return cast(DataUsageSettings, modem.data_usage)
 
-    @with_at_commander
-    def set_data_usage_reset_day(self, cmd: ATCommander, month_day: int) -> DataUsageSettings:
-        modem = self._fetch_modem_settings(cmd.get_imei().data[0][0])
+    def set_data_usage_reset_day(self, month_day: int) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(self.get_imei())
         modem.data_usage.data_reset_day = month_day
         self._save_modem_settings(modem)
         return cast(DataUsageSettings, modem.data_usage)
 
-    @with_at_commander
-    def get_data_usage_details(self, cmd: ATCommander) -> DataUsageSettings:
-        modem = self._fetch_modem_settings(cmd.get_imei().data[0][0])
+    def get_data_usage_details(self) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(self.get_imei())
         return cast(DataUsageSettings, modem.data_usage)
 
     @with_at_commander
@@ -156,6 +153,10 @@ class Modem(abc.ABC):
             time=time_str.group(1),
             gmt_offset=int(time_str.group(2)),
         )
+
+    @with_at_commander
+    def get_imei(self, cmd: ATCommander) -> str:
+        return cmd.get_imei().data[0][0]
 
     # Abstract and must be implemented by device class
 
