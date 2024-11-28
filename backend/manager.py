@@ -1,8 +1,12 @@
 import asyncio
+from datetime import datetime
 from typing import Optional
 
 from commonwealth.utils.Singleton import Singleton
 from loguru import logger
+
+from modem import Modem
+from modem.models import USBNetMode
 
 
 class ModemManager(metaclass=Singleton):
@@ -19,10 +23,53 @@ class ModemManager(metaclass=Singleton):
             pass
 
     async def configure_modem(self) -> None:
-        pass
+        for connected_modem in Modem.connected_devices():
+            try:
+                imei = connected_modem.get_imei()
+                modem_settings = connected_modem._fetch_modem_settings(imei)
+
+                if modem_settings.configured:
+                    continue
+                logger.info(f"Configuring modem with IMEI: {imei} to default settings.")
+
+                # We want clock to be automatically synced and use cdc_ether
+                connected_modem.set_automatic_time_sync(True)
+                connected_modem.set_usb_net_mode(USBNetMode.ECM)
+                connected_modem.set_auto_data_usage_save(60)
+                connected_modem.reboot()
+
+                modem_settings.configured = True
+                connected_modem._save_modem_settings(modem_settings)
+                logger.info(f"Modem with IMEI: {imei} configured successfully.")
+            except Exception as e:
+                logger.error(f"Error configuring modem: {e}")
 
     async def get_usage_metrics(self) -> None:
-        pass
+        for connected_modem in Modem.connected_devices():
+            try:
+                imei = connected_modem.get_imei()
+                modem_settings = connected_modem._fetch_modem_settings(imei)
+
+                current_day = datetime.now().day
+                if current_day == modem_settings.data_usage.data_reset_day:
+                    # In case more than one point is stored, we should clear modem accumulator
+                    if len(modem_settings.data_usage.data_points) > 1:
+                        connected_modem.reset_data_usage()
+                    # As we clear the stored data, and after one point will be added, we will keep it updating but
+                    # we will not reset the modem accumulator next call since only one point will be stored
+                    modem_settings.data_usage.data_points = {}
+                modem_settings.data_usage.data_points[current_day] = data_usage
+
+                data_usage = connected_modem.get_data_usage()
+                modem_settings.data_usage.data_used = data_usage
+
+                # Add mavlink message for usage
+
+                if modem_settings.data_usage.total_data_used() > modem_settings.data_usage.data_limit:
+                    # Add mavlink message for usage limit exceeded
+                    pass
+            except Exception as e:
+                logger.error(f"Error getting usage metrics: {e}")
 
     async def start_modem_configure_task(self) -> None:
         while not self.stop_event.is_set():
