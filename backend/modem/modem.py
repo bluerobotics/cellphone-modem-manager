@@ -181,7 +181,7 @@ class Modem(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def set_auto_data_usage_save(self, interval: int) -> None:
+    def set_auto_data_usage_save(self, interval: int = 60) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
