@@ -10,11 +10,12 @@ from settings import SettingsV1, DataUsageSettings, ModemsSettings
 from serial.tools.list_ports_linux import SysFS
 
 from modem.at import ATCommander, ATDivider, ATCommand
-from modem.exceptions import InvalidModemDevice
+from modem.exceptions import InvalidModemDevice, InexistentModemPosition
 from modem.models import (
     ModemDeviceDetails,
     ModemCellInfo,
     ModemClockDetails,
+    ModemPosition,
     ModemSignalQuality,
     ModemSIMStatus,
     OperatorInfo,
@@ -26,6 +27,9 @@ from utils import arr_to_model, get_modem_descriptors
 
 class Modem(abc.ABC):
     _manager: PydanticManager = PydanticManager(SERVICE_NAME, SettingsV1)
+
+    # This allow other modules to set a backup position in case the modem does not provide one
+    _external_position: Optional[Tuple[float, float]] = None
 
     @property
     def _settings(self) -> SettingsV1:
@@ -72,6 +76,14 @@ class Modem(abc.ABC):
             with self.at_commander() as cmd:
                 return func(self, cmd, *args, **kwargs)
         return wrapper  # type: ignore
+
+    @classmethod
+    def set_external_positioning(cls, latitude: float, longitude: float) -> None:
+        cls._external_position = (latitude, longitude)
+
+    @classmethod
+    def clear_external_positioning(cls) -> None:
+        cls._external_position = None
 
     def _fetch_modem_settings(self, imei: str) -> ModemsSettings:
         modem: Optional[ModemsSettings] = self._settings.modems.get(imei, None)
@@ -157,6 +169,16 @@ class Modem(abc.ABC):
     @with_at_commander
     def get_imei(self, cmd: ATCommander) -> str:
         return cmd.get_imei().data[0][0]
+
+    def get_position(self) -> Optional[ModemPosition]:
+        if not self._external_position:
+            raise InexistentModemPosition("Modem does not have internal or external position sources.")
+
+        return ModemPosition(
+            latitude=self._external_position[0],
+            longitude=self._external_position[1],
+            external_source=True
+        )
 
     # Abstract and must be implemented by device class
 

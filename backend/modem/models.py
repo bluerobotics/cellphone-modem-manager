@@ -31,6 +31,13 @@ class ModemClockDetails(BaseModel):
     gmt_offset: int
 
 
+class ModemPosition(BaseModel):
+    latitude: float
+    longitude: float
+    # If the position was estimated by other sources like mavlink it will be considered as external
+    external_source: bool
+
+
 class ModemSIMStatus(Enum):
     DISCONNECTED = "0"
     CONNECTED = "1"
