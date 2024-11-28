@@ -26,7 +26,7 @@ EXPOSE 20038/tcp
 
 # For manifest generation
 LABEL version="0.1.0"
-LABEL permissions='{ "ExposedPorts": { "20038/tcp": {} }, "HostConfig": { "Privileged": true, "Binds":["/root/.config:/root/.config", "/dev:/dev:rw"], "PortBindings": { "20038/tcp": [ { "HostPort": "" } ] } } }'
+LABEL permissions='{ "ExposedPorts": { "20038/tcp": {} }, "HostConfig": { "Privileged": true, "Binds":["/root/.config:/root/.config", "/dev:/dev:rw"], "ExtraHosts":["blueos.internal:host-gateway"], "PortBindings": { "20038/tcp": [ { "HostPort": "" } ] } } }'
 LABEL authors='[{ "name": "João Mário Lago", "email": "joaolago@bluerobotics.com" }, { "name": "Willian Galvani", "email": "willian@bluerobotics.com" }, { "name": "Patrick J. Pereira", "email": "patrickelectric@gmail.com" }]'
 LABEL company='{ "about": "", "name": "Blue Robotics", "email": "support@bluerobotics.com" }'
 LABEL type="device-integration"
