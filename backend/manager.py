@@ -16,6 +16,7 @@ class ModemManager(metaclass=Singleton):
 
         self.modem_configure_task: Optional[asyncio.Task] = None
         self.modem_usage_task: Optional[asyncio.Task] = None
+        self.external_positioning_task: Optional[asyncio.Task] = None
 
     async def _wait_for_or_stop(self, delay: int) -> None:
         try:
@@ -23,7 +24,7 @@ class ModemManager(metaclass=Singleton):
         except asyncio.TimeoutError:
             pass
 
-    async def configure_modem(self) -> None:
+    async def _configure_modem(self) -> None:
         for connected_modem in Modem.connected_devices():
             try:
                 imei = connected_modem.get_imei()
@@ -45,7 +46,7 @@ class ModemManager(metaclass=Singleton):
             except Exception as e:
                 logger.error(f"Error configuring modem: {e}")
 
-    async def get_usage_metrics(self) -> None:
+    async def _get_usage_metrics(self) -> None:
         for connected_modem in Modem.connected_devices():
             try:
                 imei = connected_modem.get_imei()
@@ -74,24 +75,49 @@ class ModemManager(metaclass=Singleton):
             except Exception as e:
                 logger.error(f"Error getting usage metrics: {e}")
 
+    async def _get_external_positioning(self) -> None:
+        try:
+            data = await MAVLink2Rest.get_global_position()
+            if not data:
+                return
+
+            raw_latitude = data.get("lat", 0)
+            raw_longitude = data.get("lon", 0)
+
+            if raw_latitude == 0 or raw_longitude == 0:
+                return Modem.clear_external_positioning()
+
+            Modem.set_external_positioning(raw_latitude / 1e7, raw_longitude / 1e7)
+        except Exception as e:
+            logger.error(f"Error getting external positioning: {e}")
+
     async def start_modem_configure_task(self) -> None:
         while not self.stop_event.is_set():
-            await self.configure_modem()
+            await self._configure_modem()
             await self._wait_for_or_stop(30)
 
     async def start_modem_usage_task(self) -> None:
         # Apply a shift between tasks to reduce number of concurrent lock tries
         await asyncio.sleep(15)
         while not self.stop_event.is_set():
-            await self.get_usage_metrics()
+            await self._get_usage_metrics()
             await self._wait_for_or_stop(120)
+
+    async def start_external_positioning_task(self) -> None:
+        while not self.stop_event.is_set():
+            await self._get_external_positioning()
+            await self._wait_for_or_stop(60)
 
     def start(self, loop: asyncio.AbstractEventLoop) -> None:
         self.modem_configure_task = loop.create_task(self.start_modem_configure_task())
         self.modem_usage_task = loop.create_task(self.start_modem_usage_task())
+        self.external_positioning_task = loop.create_task(self.start_external_positioning_task())
 
     async def stop(self) -> None:
         self.stop_event.set()
+        if self.external_positioning_task:
+            logger.info("Waiting for the ModemManager.external_positioning_task to finish.")
+            await self.external_positioning_task
         if self.modem_configure_task:
             logger.info("Waiting for the ModemManager.modem_configure_task to finish.")
             await self.modem_configure_task

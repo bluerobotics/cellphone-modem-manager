@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import aiohttp
 
@@ -64,3 +64,17 @@ class MAVLink2Rest:
             }
         }
         await cls._post_data(data)
+
+    @classmethod
+    async def get_global_position(cls) -> Optional[Dict]:
+        try:
+            async with aiohttp.ClientSession() as session:
+                headers = {"Accept": "application/json"}
+                async with session.get(MAVLink2Rest.api_url, headers=headers) as resp:
+                    resp.raise_for_status()
+                    data = await resp.json()
+
+                    # If some data is missing, will return None
+                    return data["vehicles"]["1"]["components"]["1"]["messages"]["GLOBAL_POSITION_INT"]["message"]
+        except Exception:
+            return None

@@ -5,12 +5,13 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi_versioning import versioned_api_route
 
 from modem import Modem
-from modem.exceptions import ATConnectionTimeout, InvalidModemDevice
+from modem.exceptions import ATConnectionTimeout, InvalidModemDevice, InexistentModemPosition
 from modem.models import (
     ModemCellInfo,
     ModemClockDetails,
     ModemDevice,
     ModemDeviceDetails,
+    ModemPosition,
     ModemSignalQuality,
     ModemSIMStatus,
     OperatorInfo,
@@ -37,6 +38,8 @@ def modem_to_http_exception(endpoint: Callable[..., Any]) -> Callable[..., Any]:
             raise error
         except InvalidModemDevice as error:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+        except InexistentModemPosition as error:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from error
         except ATConnectionTimeout as error:
             raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT, detail=str(error)) from error
         except Exception as error:
@@ -127,6 +130,17 @@ async def fetch_clock_by_id(modem_id: str) -> ModemClockDetails:
     modem = Modem.get_device(modem_id)
 
     return modem.get_clock()
+
+
+@modem_router_v1.get("/{modem_id}/position", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
+async def fetch_position_by_id(modem_id: str) -> ModemPosition:
+    """
+    Return the current position of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return modem.get_position()
 
 
 @modem_router_v1.get("/{modem_id}/sim_status", status_code=status.HTTP_200_OK)

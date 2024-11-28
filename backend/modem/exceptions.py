@@ -12,3 +12,6 @@ class SerialSafeWriteFailed(Exception):
 
 class InvalidModemDevice(Exception):
     """Raised when trying to get a implementation class for a modem device that does not exist."""
+
+class InexistentModemPosition(Exception):
+    """Raised when trying to get a position for a modem that does not have internal or external position sources."""
