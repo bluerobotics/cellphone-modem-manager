@@ -5,6 +5,7 @@ from typing import Optional
 from commonwealth.utils.Singleton import Singleton
 from loguru import logger
 
+from mavlink import MAVLink2Rest, MAVSeverity
 from modem import Modem
 from modem.models import USBNetMode
 
@@ -58,16 +59,18 @@ class ModemManager(metaclass=Singleton):
                     # As we clear the stored data, and after one point will be added, we will keep it updating but
                     # we will not reset the modem accumulator next call since only one point will be stored
                     modem_settings.data_usage.data_points = {}
-                modem_settings.data_usage.data_points[current_day] = data_usage
 
                 data_usage = connected_modem.get_data_usage()
                 modem_settings.data_usage.data_used = data_usage
+                modem_settings.data_usage.data_points[current_day] = data_usage
+                connected_modem._save_modem_settings(modem_settings)
 
-                # Add mavlink message for usage
+                await MAVLink2Rest.send_named_float("DATA_USED", modem_settings.data_usage.total_data_used())
 
                 if modem_settings.data_usage.total_data_used() > modem_settings.data_usage.data_limit:
-                    # Add mavlink message for usage limit exceeded
-                    pass
+                    await MAVLink2Rest.send_status_text(
+                        f"Data limit reached for modem: {imei[:15]}", MAVSeverity.ALERT
+                    )
             except Exception as e:
                 logger.error(f"Error getting usage metrics: {e}")
 
@@ -77,6 +80,8 @@ class ModemManager(metaclass=Singleton):
             await self._wait_for_or_stop(30)
 
     async def start_modem_usage_task(self) -> None:
+        # Apply a shift between tasks to reduce number of concurrent lock tries
+        await asyncio.sleep(15)
         while not self.stop_event.is_set():
             await self.get_usage_metrics()
             await self._wait_for_or_stop(120)
