@@ -105,7 +105,7 @@ async def command_by_id(
     modem_id: str,
     command: str = Query(..., description="AT Command string to be executed in the modem"),
     delay: float = Query(0.3, description="Delay in seconds between command sent and response read"),
-) -> None:
+) -> str:
     """
     Execute an AT command in a modem by modem id.
     """
@@ -219,7 +219,7 @@ async def fetch_operator_info_by_id(modem_id: str) -> OperatorInfo:
     return modem.get_operator_info()
 
 
-@modem_router_v1.put("/{modem_id}/pdp/{profile}apn/{apn}", status_code=status.HTTP_204_NO_CONTENT)
+@modem_router_v1.put("/{modem_id}/pdp/{profile}/apn/{apn}", status_code=status.HTTP_204_NO_CONTENT)
 @modem_to_http_exception
 async def set_apn_by_profile_by_id(modem_id: str, profile: int, apn: str) -> None:
     """
@@ -254,9 +254,9 @@ async def set_data_usage_alert_by_id(modem_id: str, total_bytes: int) -> DataUsa
 
 @modem_router_v1.put("/{modem_id}/usage/reset/{month_day}", status_code=status.HTTP_200_OK)
 @modem_to_http_exception
-async def set_data_usage_reset_day(modem_id: str, month_day: int) -> DataUsageSettings:
+async def set_data_usage_reset_day_by_id(modem_id: str, month_day: int) -> DataUsageSettings:
     """
-    Set day in month where data usage counter will be reset.
+    Set day in month where data usage counter will be reset by modem id.
     """
     modem = Modem.get_device(modem_id)
 
