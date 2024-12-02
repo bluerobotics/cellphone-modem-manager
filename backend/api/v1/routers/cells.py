@@ -31,7 +31,7 @@ async def fetch_cell_coordinate(
     return cell
 
 
-@cells_router_v1.get("/nearby", status_code=status.HTTP_201_CREATED)
+@cells_router_v1.get("/nearby", status_code=status.HTTP_200_OK)
 async def fetch_nearby_cells(
     lat: float = Query(..., description="Latitude"),
     lon: float = Query(..., description="Longitude"),
