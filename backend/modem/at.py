@@ -153,7 +153,8 @@ class ATCommander:
         self,
         command: str,
         delay: Optional[int] = 0.3,
-        cmd_id_response: Optional[str] = None
+        cmd_id_response: Optional[str] = None,
+        raw_response: bool = False
     ) -> ATResponse:
         self._safe_serial_write(f"{command}\r\n")
 
@@ -161,7 +162,7 @@ class ATCommander:
         if cmd_id_response is None:
             time.sleep(delay)
 
-        return self._cmd_read_response(cmd_id_response)
+        return self.ser.read_all().decode("ascii") if raw_response else self._cmd_read_response(cmd_id_response)
 
     def command(
         self,
