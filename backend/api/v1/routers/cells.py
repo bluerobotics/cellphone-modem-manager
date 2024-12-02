@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi_versioning import versioned_api_route
 
 from cells import CellFetcher
+from cells.models import NearbyCellTower
 from settings import CellLocationSettings
 
 
@@ -28,3 +29,11 @@ async def fetch_cell_coordinate(
         raise HTTPException(status_code=404, detail="Cell not found")
 
     return cell
+
+
+@cells_router_v1.get("/nearby", status_code=status.HTTP_201_CREATED)
+async def fetch_nearby_cells(
+    lat: float = Query(..., description="Latitude"),
+    lon: float = Query(..., description="Longitude"),
+) -> list[NearbyCellTower]:
+    return await cell_fetcher.fetch_nearby_cells(lat, lon)
