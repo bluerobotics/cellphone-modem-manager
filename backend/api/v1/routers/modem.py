@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Any, Callable, Tuple
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi_versioning import versioned_api_route
 
 from modem import Modem
@@ -97,6 +97,27 @@ async def fetch_serving_cell_info_by_id(modem_id: str) -> ModemCellInfo:
     modem = Modem.get_device(modem_id)
 
     return modem.get_cell_info()
+
+
+@modem_router_v1.post("/{modem_id}/commander", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
+async def command_by_id(
+    modem_id: str,
+    command: str = Query(..., description="AT Command string to be executed in the modem"),
+    delay: float = Query(0.3, description="Delay in seconds between command sent and response read"),
+) -> None:
+    """
+    Execute an AT command in a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    with modem.at_commander() as cmd:
+        return cmd.raw_command(
+            command,
+            delay=delay,
+            cmd_id_response=None,
+            raw_response=True,
+        )
 
 
 @modem_router_v1.post("/{modem_id}/reboot", status_code=status.HTTP_204_NO_CONTENT)
