@@ -163,7 +163,7 @@ class Modem(abc.ABC):
         return ModemClockDetails(
             date=response[0],
             time=time_str.group(1),
-            gmt_offset=int(time_str.group(2)),
+            gmt_offset=int(time_str.group(2)) / 4,
         )
 
     @with_at_commander
