@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from commonwealth.utils.Singleton import Singleton
@@ -55,18 +55,33 @@ class ModemManager(metaclass=Singleton):
                 if not modem_settings.data_usage.data_control_enabled:
                     continue
 
-                current_day = datetime.now().day
-                if current_day == modem_settings.data_usage.data_reset_day:
+                # Get current date to use as base for other calculations
+                current_date = datetime.now()
+
+                # We try to get from settings last reset date, if not available we use min date
+                last_reset_date = (
+                    datetime.strptime(modem_settings.data_usage.last_reset_date, "%Y-%m-%d")
+                    if modem_settings.data_usage.last_reset_date
+                    else datetime.min
+                )
+
+                # If we pass one month since last reset, we should reset the modem accumulator or if user is running
+                # and we are in the reset day
+                if (
+                    current_date - last_reset_date > timedelta(days=31) or
+                    current_date.day == modem_settings.data_usage.data_reset_day
+                ):
                     # In case more than one point is stored, we should clear modem accumulator
                     if len(modem_settings.data_usage.data_points) > 1:
                         connected_modem.reset_data_usage()
+                        modem_settings.data_usage.last_reset_date = current_date.strftime("%Y-%m-%d")
                     # As we clear the stored data, and after one point will be added, we will keep it updating but
                     # we will not reset the modem accumulator next call since only one point will be stored
                     modem_settings.data_usage.data_points = {}
 
                 data_usage = connected_modem.get_data_usage()
                 modem_settings.data_usage.data_used = data_usage
-                modem_settings.data_usage.data_points[current_day] = data_usage
+                modem_settings.data_usage.data_points[current_date.strftime("%Y-%m-%d")] = data_usage
                 connected_modem._save_modem_settings(modem_settings)
 
                 await MAVLink2Rest.send_named_float("DATA_USED", modem_settings.data_usage.total_data_used())
