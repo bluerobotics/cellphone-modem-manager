@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 from pydantic import BaseModel
 
@@ -16,6 +16,8 @@ class DataUsageControlSettings(BaseModel):
     data_limit: int = 2 * 1024 * 1024 * 1024
     # The day of the month when the data usage resets
     data_reset_day: int = 1
+    # The date when the data usage was last reset
+    last_reset_date: Optional[str] = None
 
 
 class DataUsageSettings(DataUsageControlSettings):
@@ -25,7 +27,7 @@ class DataUsageSettings(DataUsageControlSettings):
     # RX and TX data used in bytes
     data_used: Tuple[int, int] = (0, 0)
     # List of data points from last data_reset_day to now, key is the month day and value is RX and TX data used
-    data_points: Dict[int, Tuple[int, int]] = {}
+    data_points: Dict[str, Tuple[int, int]] = {}
 
 
 class ModemsSettings(BaseModel):
