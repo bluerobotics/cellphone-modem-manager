@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Optional, Tuple, Type, Self, cast
 
 from commonwealth.settings.manager import PydanticManager
 from config import SERVICE_NAME
-from settings import SettingsV1, DataUsageSettings, ModemsSettings
+from settings import SettingsV1, DataUsageSettings, DataUsageControlSettings, ModemsSettings
 from serial.tools.list_ports_linux import SysFS
 
 from modem.at import ATCommander, ATDivider, ATCommand
@@ -103,15 +103,11 @@ class Modem(abc.ABC):
 
     # Common AT commands, we supply a basic implementation for all modems but can be overridden if needed by device
 
-    def set_data_usage_alert(self, total_bytes: int) -> DataUsageSettings:
+    def set_data_usage_control(self, control: DataUsageControlSettings) -> DataUsageSettings:
         modem = self._fetch_modem_settings(self.get_imei())
-        modem.data_usage.data_limit = total_bytes
-        self._save_modem_settings(modem)
-        return cast(DataUsageSettings, modem.data_usage)
-
-    def set_data_usage_reset_day(self, month_day: int) -> DataUsageSettings:
-        modem = self._fetch_modem_settings(self.get_imei())
-        modem.data_usage.data_reset_day = month_day
+        modem.data_usage.data_control_enabled = control.data_control_enabled
+        modem.data_usage.data_limit = control.data_limit
+        modem.data_usage.data_reset_day = control.data_reset_day
         self._save_modem_settings(modem)
         return cast(DataUsageSettings, modem.data_usage)
 

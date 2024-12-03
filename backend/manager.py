@@ -52,6 +52,9 @@ class ModemManager(metaclass=Singleton):
                 imei = connected_modem.get_imei()
                 modem_settings = connected_modem._fetch_modem_settings(imei)
 
+                if not modem_settings.data_usage.data_control_enabled:
+                    continue
+
                 current_day = datetime.now().day
                 if current_day == modem_settings.data_usage.data_reset_day:
                     # In case more than one point is stored, we should clear modem accumulator
