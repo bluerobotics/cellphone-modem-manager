@@ -10,14 +10,18 @@ class CellLocationSettings(BaseModel):
     range: int
 
 
-class DataUsageSettings(BaseModel):
-    def total_data_used(self) -> int:
-        return self.data_used[0] + self.data_used[1]
-
+class DataUsageControlSettings(BaseModel):
+    data_control_enabled: bool = False
     # Data limit in bytes, default is 2GB
     data_limit: int = 2 * 1024 * 1024 * 1024
     # The day of the month when the data usage resets
     data_reset_day: int = 1
+
+
+class DataUsageSettings(DataUsageControlSettings):
+    def total_data_used(self) -> int:
+        return self.data_used[0] + self.data_used[1]
+
     # RX and TX data used in bytes
     data_used: Tuple[int, int] = (0, 0)
     # List of data points from last data_reset_day to now, key is the month day and value is RX and TX data used

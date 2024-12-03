@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Any, Callable, Tuple
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Body, Query, status
 from fastapi_versioning import versioned_api_route
 
 from modem import Modem
@@ -18,7 +18,7 @@ from modem.models import (
     PDPContext,
     USBNetMode,
 )
-from settings import DataUsageSettings
+from settings import DataUsageSettings, DataUsageControlSettings
 
 
 modem_router_v1 = APIRouter(
@@ -241,23 +241,14 @@ async def fetch_data_usage_by_id(modem_id: str) -> DataUsageSettings:
     return modem.get_data_usage_details()
 
 
-@modem_router_v1.put("/{modem_id}/usage/alert/{total_bytes}", status_code=status.HTTP_200_OK)
-@modem_to_http_exception
-async def set_data_usage_alert_by_id(modem_id: str, total_bytes: int) -> DataUsageSettings:
+@modem_router_v1.put("/{modem_id}/usage/control", status_code=status.HTTP_200_OK)
+async def set_data_usage_control_by_id(
+    modem_id: str,
+    data_usage: DataUsageControlSettings = Body(...),
+) -> DataUsageSettings:
     """
-    Set data usage alert of a modem by modem id.
-    """
-    modem = Modem.get_device(modem_id)
-
-    return modem.set_data_usage_alert(total_bytes)
-
-
-@modem_router_v1.put("/{modem_id}/usage/reset/{month_day}", status_code=status.HTTP_200_OK)
-@modem_to_http_exception
-async def set_data_usage_reset_day_by_id(modem_id: str, month_day: int) -> DataUsageSettings:
-    """
-    Set day in month where data usage counter will be reset by modem id.
+    Set data usage control of a modem by modem id.
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.set_data_usage_reset_day(month_day)
+    return modem.set_data_usage_control(data_usage)
