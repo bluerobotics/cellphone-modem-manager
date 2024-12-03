@@ -52,9 +52,6 @@ class ModemManager(metaclass=Singleton):
                 imei = connected_modem.get_imei()
                 modem_settings = connected_modem._fetch_modem_settings(imei)
 
-                if not modem_settings.data_usage.data_control_enabled:
-                    continue
-
                 # Get current date to use as base for other calculations
                 current_date = datetime.now()
 
@@ -83,6 +80,9 @@ class ModemManager(metaclass=Singleton):
                 modem_settings.data_usage.data_used = data_usage
                 modem_settings.data_usage.data_points[current_date.strftime("%Y-%m-%d")] = data_usage
                 connected_modem._save_modem_settings(modem_settings)
+
+                if not modem_settings.data_usage.data_control_enabled:
+                    continue
 
                 await MAVLink2Rest.send_named_float("DATA_USED", modem_settings.data_usage.total_data_used())
 
