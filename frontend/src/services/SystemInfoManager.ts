@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { NetworkInterface } from '@/types/SystemInfoManager'
 
-const SYSTEM_INFO_API = `http://blueos.internal/system`
+const SYSTEM_INFO_API = `/v1.0/blueos/system`
 
 const api = axios.create({
   baseURL: SYSTEM_INFO_API,
