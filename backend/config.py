@@ -2,4 +2,5 @@
 
 SERVICE_NAME = "cellphone-modem-manager"
 
-MAV_LINK_2_REST_API = "http://blueos.internal:6040/v1"
+BLUE_OS_HOST = "blueos.internal"
+MAV_LINK_2_REST_API = f"http://{BLUE_OS_HOST}:6040/v1"

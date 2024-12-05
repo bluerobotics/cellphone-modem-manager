@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_versioning import VersionedFastAPI
 
 # Routers
-from api.v1.routers import cells_router_v1, index_router_v1, modem_router_v1
+from api.v1.routers import blueos_router_v1, cells_router_v1, index_router_v1, modem_router_v1
 
 application = FastAPI(
     title="Cellphone Modem Manager Configuration API",
@@ -14,6 +14,7 @@ application = FastAPI(
 )
 
 # API v1
+application.include_router(blueos_router_v1)
 application.include_router(index_router_v1)
 application.include_router(cells_router_v1)
 application.include_router(modem_router_v1)
