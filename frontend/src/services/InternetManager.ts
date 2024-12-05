@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { SpeedTestResult, WebsiteStatus } from '@/types/InternetManager'
 
-const HELPER_API = `http://blueos.internal/helper/latest`
+const HELPER_API = `/v1.0/blueos/helper/latest`
 
 const api = axios.create({
   baseURL: HELPER_API,
