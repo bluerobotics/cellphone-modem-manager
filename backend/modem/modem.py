@@ -66,16 +66,17 @@ class Modem(abc.ABC):
         return False
 
     @abc.abstractmethod
-    def at_commander(self) -> ATCommander:
+    async def at_commander(self) -> ATCommander:
         raise NotImplementedError
 
     @staticmethod
     def with_at_commander(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(self: Self, *args: Any, **kwargs: Any) -> Any:
-            with self.at_commander() as cmd:
-                return func(self, cmd, *args, **kwargs)
-        return wrapper  # type: ignore
+        async def wrapper(self: Self, *args: Any, **kwargs: Any) -> Any:
+            cmd = await self.at_commander()
+            with cmd:
+                return await func(self, cmd, *args, **kwargs)
+        return wrapper
 
     @classmethod
     def set_external_positioning(cls, latitude: float, longitude: float) -> None:
@@ -103,29 +104,29 @@ class Modem(abc.ABC):
 
     # Common AT commands, we supply a basic implementation for all modems but can be overridden if needed by device
 
-    def set_data_usage_control(self, control: DataUsageControlSettings) -> DataUsageSettings:
-        modem = self._fetch_modem_settings(self.get_imei())
+    async def set_data_usage_control(self, control: DataUsageControlSettings) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(await self.get_imei())
         modem.data_usage.data_control_enabled = control.data_control_enabled
         modem.data_usage.data_limit = control.data_limit
         modem.data_usage.data_reset_day = control.data_reset_day
         self._save_modem_settings(modem)
         return cast(DataUsageSettings, modem.data_usage)
 
-    def get_data_usage_details(self) -> DataUsageSettings:
-        modem = self._fetch_modem_settings(self.get_imei())
+    async def get_data_usage_details(self) -> DataUsageSettings:
+        modem = self._fetch_modem_settings(await self.get_imei())
         return cast(DataUsageSettings, modem.data_usage)
 
     @with_at_commander
-    def reboot(self, cmd: ATCommander) -> None:
-        cmd.reboot_modem()
+    async def reboot(self, cmd: ATCommander) -> None:
+        await cmd.reboot_modem()
 
     @with_at_commander
-    def factory_reset(self, cmd: ATCommander) -> None:
-        cmd.reset_to_factory()
+    async def factory_reset(self, cmd: ATCommander) -> None:
+        await cmd.reset_to_factory()
 
     @with_at_commander
-    def get_pdp_info(self, cmd: ATCommander) -> List[PDPContext]:
-        response = cmd.get_pdp_info()
+    async def get_pdp_info(self, cmd: ATCommander) -> List[PDPContext]:
+        response = await cmd.get_pdp_info()
 
         return [
             arr_to_model(info, PDPContext)
@@ -133,14 +134,14 @@ class Modem(abc.ABC):
         ]
 
     @with_at_commander
-    def get_operator_info(self, cmd: ATCommander) -> OperatorInfo:
-        return arr_to_model(cmd.get_operator_info().data[0], OperatorInfo)
+    async def get_operator_info(self, cmd: ATCommander) -> OperatorInfo:
+        return arr_to_model((await cmd.get_operator_info()).data[0], OperatorInfo)
 
     @with_at_commander
-    def get_signal_strength(self, cmd: ATCommander) -> ModemSignalQuality:
+    async def get_signal_strength(self, cmd: ATCommander) -> ModemSignalQuality:
         data = cast(
             ModemSignalQuality,
-            arr_to_model(cmd.get_signal_strength().data[0], ModemSignalQuality)
+            arr_to_model((await cmd.get_signal_strength()).data[0], ModemSignalQuality)
         )
 
         data.signal_strength_dbm = 2 * data.signal_strength_dbm - 113
@@ -148,12 +149,12 @@ class Modem(abc.ABC):
         return data
 
     @with_at_commander
-    def set_apn(self, cmd: ATCommander, profile: int, apn: str) -> None:
-        cmd.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.EQ, f'{profile},"IP","{apn}"', cmd_id_response=False)
+    async def set_apn(self, cmd: ATCommander, profile: int, apn: str) -> None:
+        await cmd.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.EQ, f'{profile},"IP","{apn}"', cmd_id_response=False)
 
     @with_at_commander
-    def get_clock(self, cmd: ATCommander) -> ModemClockDetails:
-        response = cmd.get_clock().data[0]
+    async def get_clock(self, cmd: ATCommander) -> ModemClockDetails:
+        response = (await cmd.get_clock()).data[0]
         time_str = re.match(r"(\d{2}:\d{2}:\d{2})([-+]\d{2})", response[1])
 
         return ModemClockDetails(
@@ -163,10 +164,10 @@ class Modem(abc.ABC):
         )
 
     @with_at_commander
-    def get_imei(self, cmd: ATCommander) -> str:
-        return cmd.get_imei().data[0][0]
+    async def get_imei(self, cmd: ATCommander) -> str:
+        return (await cmd.get_imei()).data[0][0]
 
-    def get_position(self) -> Optional[ModemPosition]:
+    async def get_position(self) -> Optional[ModemPosition]:
         if not self._external_position:
             raise InexistentModemPosition("Modem does not have internal or external position sources.")
 
@@ -179,41 +180,41 @@ class Modem(abc.ABC):
     # Abstract and must be implemented by device class
 
     @abc.abstractmethod
-    def get_mt_info(self) -> ModemDeviceDetails:
+    async def get_mt_info(self) -> ModemDeviceDetails:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_usb_net_mode(self) -> USBNetMode:
+    async def get_usb_net_mode(self) -> USBNetMode:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def set_usb_net_mode(self, mode: USBNetMode) -> None:
+    async def set_usb_net_mode(self, mode: USBNetMode) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_cell_info(self) -> ModemCellInfo:
+    async def get_cell_info(self) -> ModemCellInfo:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_sim_status(self) -> ModemSIMStatus:
+    async def get_sim_status(self) -> ModemSIMStatus:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def set_auto_data_usage_save(self, interval: int = 60) -> None:
+    async def set_auto_data_usage_save(self, interval: int = 60) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def reset_data_usage(self) -> None:
+    async def reset_data_usage(self) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_data_usage(self) -> Tuple[int, int]:
+    async def get_data_usage(self) -> Tuple[int, int]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def set_automatic_time_sync(self, enabled: bool = True) -> None:
+    async def set_automatic_time_sync(self, enabled: bool = True) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def ping(self, host: str) -> int:
+    async def ping(self, host: str) -> int:
         raise NotImplementedError

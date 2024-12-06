@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Tuple, cast
 
@@ -29,7 +30,7 @@ class LTEEG25G(Modem):
         """
         return any(port.manufacturer == "Quectel" and port.product == "EG25-G" for port in self.ports)
 
-    def at_commander(self, timeout: int = 10) -> ATCommander:
+    async def at_commander(self, timeout: int = 10) -> ATCommander:
         # Usually the third port is the AT port in Quectel modems, so try it first
         ports = [self.ports[2]] + self.ports[:2] + self.ports[3:] if len(self.ports) > 3 else self.ports
 
@@ -38,17 +39,19 @@ class LTEEG25G(Modem):
             while time.monotonic() < end_time:
                 if not ATCommander.is_locked(port.device):
                     try:
-                        return ATCommander(port.device)
+                        commander = ATCommander(port.device)
+                        await commander.setup()
+                        return commander
                     except Exception:
                         break
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
 
         if time.monotonic() < end_time:
             raise ATConnectionError(f"Unable to detect any AT port for device {self.device}")
         raise ATConnectionTimeout(f"Timeout reached trying to connect to device {self.device}")
 
     @Modem.with_at_commander
-    def get_mt_info(self, cmd: ATCommander) -> ModemDeviceDetails:
+    async def get_mt_info(self, cmd: ATCommander) -> ModemDeviceDetails:
         # Since this modem provides all necessary info in a single command, we can override the default.
         # Expected ATI
         # Quectel
@@ -60,11 +63,11 @@ class LTEEG25G(Modem):
         # Apr 16 2020 20:32:01
         # Authors: QCT
         # OK
-        response = cmd.get_mt_info().data[0]
-        firmware = cmd.get_firmware_version_details().data[0]
-        imei = cmd.get_imei().data[0]
-        serial_number = cmd.get_serial_number().data[0]
-        imsi = cmd.get_international_mobile_subscriber_id().data[0]
+        response = (await cmd.get_mt_info()).data[0]
+        firmware = (await cmd.get_firmware_version_details()).data[0]
+        imei = (await cmd.get_imei()).data[0]
+        serial_number = (await cmd.get_serial_number()).data[0]
+        imsi = (await cmd.get_international_mobile_subscriber_id()).data[0]
 
         return ModemDeviceDetails(
             device=self.device,
@@ -82,20 +85,20 @@ class LTEEG25G(Modem):
         )
 
     @Modem.with_at_commander
-    def get_usb_net_mode(self, cmd: ATCommander) -> USBNetMode:
+    async def get_usb_net_mode(self, cmd: ATCommander) -> USBNetMode:
         # Expected: +QCFG: "usbnet",1
-        response = cmd.command(QuectelATCommand.CONFIGURATION, ATDivider.EQ, '"usbnet"')
+        response = await cmd.command(QuectelATCommand.CONFIGURATION, ATDivider.EQ, '"usbnet"')
 
         return USBNetMode(response.data[0][1])
 
     @Modem.with_at_commander
-    def set_usb_net_mode(self, cmd: ATCommander, mode: USBNetMode) -> None:
+    async def set_usb_net_mode(self, cmd: ATCommander, mode: USBNetMode) -> None:
         # Expected: OK
-        cmd.command(QuectelATCommand.CONFIGURATION, ATDivider.EQ, f'"usbnet",{mode.value}', cmd_id_response=False)
+        await cmd.command(QuectelATCommand.CONFIGURATION, ATDivider.EQ, f'"usbnet",{mode.value}', cmd_id_response=False)
 
     @Modem.with_at_commander
-    def get_cell_info(self, cmd: ATCommander) -> ModemCellInfo:
-        serving_cell_data = cmd.command(QuectelATCommand.ENGINEER_MODE, ATDivider.EQ, '"servingcell"').data[0]
+    async def get_cell_info(self, cmd: ATCommander) -> ModemCellInfo:
+        serving_cell_data = (await cmd.command(QuectelATCommand.ENGINEER_MODE, ATDivider.EQ, '"servingcell"')).data[0]
         serving_cell_data.pop(0)  # Discard the first element, which is always 'servingcell'
 
         serving_rat = AccessTechnology(serving_cell_data[1])
@@ -104,7 +107,7 @@ class LTEEG25G(Modem):
             raise NotImplementedError(f"Cell information for {serving_rat} is not implemented")
         serving_cell = cast(BaseServingCell, arr_to_model(serving_cell_data, serving_model))
 
-        neighbor_cells_data = cmd.command(QuectelATCommand.ENGINEER_MODE, ATDivider.EQ, '"neighbourcell"').data
+        neighbor_cells_data = (await cmd.command(QuectelATCommand.ENGINEER_MODE, ATDivider.EQ, '"neighbourcell"')).data
         neighbor_cells = []
         for neighbor_data in neighbor_cells_data:
             neighbor_type = NeighborCellType(neighbor_data[0])
@@ -120,29 +123,29 @@ class LTEEG25G(Modem):
         )
 
     @Modem.with_at_commander
-    def get_sim_status(self, cmd: ATCommander) -> ModemSIMStatus:
-        response = cmd.command(QuectelATCommand.SIM_STATUS, ATDivider.QUESTION)
+    async def get_sim_status(self, cmd: ATCommander) -> ModemSIMStatus:
+        response = await cmd.command(QuectelATCommand.SIM_STATUS, ATDivider.QUESTION)
 
         return ModemSIMStatus(response.data[0][1])
 
     @Modem.with_at_commander
-    def ping(self, cmd: ATCommander, host: str) -> int:
-        response = cmd.command(QuectelATCommand.PING, ATDivider.EQ, f'1,"{host}",1,1')
+    async def ping(self, cmd: ATCommander, host: str) -> int:
+        response = await cmd.command(QuectelATCommand.PING, ATDivider.EQ, f'1,"{host}",1,1')
 
         return int(response.data[0][0])
 
     @Modem.with_at_commander
-    def set_auto_data_usage_save(self, cmd: ATCommander, interval: int = 60) -> None:
-        cmd.command(QuectelATCommand.AUTO_PACKET_DATA_COUNTER, ATDivider.EQ, f"{interval}", cmd_id_response=False)
+    async def set_auto_data_usage_save(self, cmd: ATCommander, interval: int = 60) -> None:
+        await cmd.command(QuectelATCommand.AUTO_PACKET_DATA_COUNTER, ATDivider.EQ, f"{interval}", cmd_id_response=False)
 
     @Modem.with_at_commander
-    def reset_data_usage(self, cmd: ATCommander) -> None:
-        cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.EQ, "0")
-        cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.EQ, "1")
+    async def reset_data_usage(self, cmd: ATCommander) -> None:
+        await cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.EQ, "0")
+        await cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.EQ, "1")
 
     @Modem.with_at_commander
-    def get_data_usage(self, cmd: ATCommander) -> Tuple[int, int]:
-        response = cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.QUESTION)
+    async def get_data_usage(self, cmd: ATCommander) -> Tuple[int, int]:
+        response = await cmd.command(QuectelATCommand.PACKET_DATA_COUNTER, ATDivider.QUESTION)
 
         return (
             int(response.data[0][0]),
@@ -150,5 +153,5 @@ class LTEEG25G(Modem):
         )
 
     @Modem.with_at_commander
-    def set_automatic_time_sync(self, cmd: ATCommander, enabled: bool = True) -> None:
-        cmd.command(QuectelATCommand.AUTO_TIME_SYNC, ATDivider.EQ, '1' if enabled else '0', cmd_id_response=False)
+    async def set_automatic_time_sync(self, cmd: ATCommander, enabled: bool = True) -> None:
+        await cmd.command(QuectelATCommand.AUTO_TIME_SYNC, ATDivider.EQ, '1' if enabled else '0', cmd_id_response=False)
