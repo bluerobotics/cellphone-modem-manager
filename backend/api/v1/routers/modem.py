@@ -55,6 +55,7 @@ async def fetch() -> list[ModemDevice]:
     List device descriptor of all connected modems.
     """
     modems = Modem.connected_devices()
+
     return [
         ModemDevice(
             device=modem.device,
@@ -74,7 +75,7 @@ async def fetch_by_id(modem_id: str) -> ModemDeviceDetails:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_mt_info()
+    return await modem.get_mt_info()
 
 
 @modem_router_v1.get("/{modem_id}/signal", status_code=status.HTTP_200_OK)
@@ -85,7 +86,7 @@ async def fetch_signal_strength_by_id(modem_id: str) -> ModemSignalQuality:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_signal_strength()
+    return await modem.get_signal_strength()
 
 
 @modem_router_v1.get("/{modem_id}/cell", status_code=status.HTTP_200_OK)
@@ -96,7 +97,7 @@ async def fetch_serving_cell_info_by_id(modem_id: str) -> ModemCellInfo:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_cell_info()
+    return await modem.get_cell_info()
 
 
 @modem_router_v1.post("/{modem_id}/commander", status_code=status.HTTP_200_OK)
@@ -111,8 +112,9 @@ async def command_by_id(
     """
     modem = Modem.get_device(modem_id)
 
-    with modem.at_commander() as cmd:
-        return cmd.raw_command(
+    cmd = await modem.at_commander()
+    with cmd:
+        return await cmd.raw_command(
             command,
             delay=delay,
             cmd_id_response=None,
@@ -128,7 +130,7 @@ async def reboot_by_id(modem_id: str) -> None:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.reboot()
+    return await modem.reboot()
 
 
 @modem_router_v1.post("/{modem_id}/reset", status_code=status.HTTP_204_NO_CONTENT)
@@ -139,7 +141,7 @@ async def reset_by_id(modem_id: str) -> None:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.factory_reset()
+    return await modem.factory_reset()
 
 
 @modem_router_v1.get("/{modem_id}/clock", status_code=status.HTTP_200_OK)
@@ -150,7 +152,7 @@ async def fetch_clock_by_id(modem_id: str) -> ModemClockDetails:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_clock()
+    return await modem.get_clock()
 
 
 @modem_router_v1.get("/{modem_id}/position", status_code=status.HTTP_200_OK)
@@ -161,7 +163,7 @@ async def fetch_position_by_id(modem_id: str) -> ModemPosition:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_position()
+    return await modem.get_position()
 
 
 @modem_router_v1.get("/{modem_id}/sim_status", status_code=status.HTTP_200_OK)
@@ -172,7 +174,7 @@ async def fetch_sim_status_by_id(modem_id: str) -> ModemSIMStatus:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_sim_status()
+    return await modem.get_sim_status()
 
 
 @modem_router_v1.get("/{modem_id}/config/usb_net", status_code=status.HTTP_200_OK)
@@ -183,7 +185,7 @@ async def fetch_usb_mode_by_id(modem_id: str) -> USBNetMode:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_usb_net_mode()
+    return await modem.get_usb_net_mode()
 
 
 @modem_router_v1.put("/{modem_id}/config/usb_net/{mode}", status_code=status.HTTP_204_NO_CONTENT)
@@ -194,7 +196,7 @@ async def set_usb_mode_by_id(modem_id: str, mode: USBNetMode) -> None:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.set_usb_net_mode(mode)
+    return await modem.set_usb_net_mode(mode)
 
 
 @modem_router_v1.get("/{modem_id}/pdp", status_code=status.HTTP_200_OK)
@@ -205,7 +207,7 @@ async def fetch_pdp_info_by_id(modem_id: str) -> list[PDPContext]:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_pdp_info()
+    return await modem.get_pdp_info()
 
 
 @modem_router_v1.get("/{modem_id}/operator", status_code=status.HTTP_200_OK)
@@ -216,7 +218,7 @@ async def fetch_operator_info_by_id(modem_id: str) -> OperatorInfo:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_operator_info()
+    return await modem.get_operator_info()
 
 
 @modem_router_v1.put("/{modem_id}/pdp/{profile}/apn/{apn}", status_code=status.HTTP_204_NO_CONTENT)
@@ -227,7 +229,7 @@ async def set_apn_by_profile_by_id(modem_id: str, profile: int, apn: str) -> Non
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.set_apn(profile, apn)
+    return await modem.set_apn(profile, apn)
 
 
 @modem_router_v1.get("/{modem_id}/usage/details", status_code=status.HTTP_200_OK)
@@ -238,7 +240,7 @@ async def fetch_data_usage_by_id(modem_id: str) -> DataUsageSettings:
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.get_data_usage_details()
+    return await modem.get_data_usage_details()
 
 
 @modem_router_v1.put("/{modem_id}/usage/control", status_code=status.HTTP_200_OK)
@@ -251,4 +253,4 @@ async def set_data_usage_control_by_id(
     """
     modem = Modem.get_device(modem_id)
 
-    return modem.set_data_usage_control(data_usage)
+    return await modem.set_data_usage_control(data_usage)

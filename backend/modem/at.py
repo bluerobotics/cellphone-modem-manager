@@ -1,4 +1,5 @@
-import time
+import asyncio
+import traceback
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Literal, List, Optional
@@ -60,6 +61,8 @@ class ATCommander:
     def __init__(self, port: str, baud: int = 115200):
         self.port = port
         self.baud = baud
+        self._locked_ports[self.port] = True
+
         # Init as None to avoid errors on __del__ if we fail to connect
         self.ser = None
         self.ser = serial.Serial(self.port, self.baud)
@@ -69,18 +72,18 @@ class ATCommander:
         self.ser.flush()
         self.ser.read_all()
 
+    async def setup(self) -> None:
+        """Async continuation of __init__ must call this method after creating the instance"""
         # If we fail to connect we try configure terminators and check again
-        if not self.check_ok() and not self._configure_terminators() and not self.check_ok():
+        if not await self.check_ok() and not await self._configure_terminators() and not await self.check_ok():
             raise ATConnectionError(f"Failed to connect to {self.port}")
         # Terminators we can get to work even when not perfect, but echo mode should be disabled
-        self.command(ATCommand.SET_ECHO_MODE, ATDivider.UNDEFINED, "0", delay=0.1)
+        await self.command(ATCommand.SET_ECHO_MODE, ATDivider.UNDEFINED, "0", delay=0.3)
 
-        self._locked_ports[port] = True
-
-    def _configure_terminators(self) -> None:
+    async def _configure_terminators(self) -> None:
         # Set terminators
-        self.command(ATCommand.SET_CMD_LINE_TERM, ATDivider.EQ, "13", delay=0.1)
-        self.command(ATCommand.SET_RESP_FORMAT_CHAR, ATDivider.EQ, "10", delay=0.1)
+        await self.command(ATCommand.SET_CMD_LINE_TERM, ATDivider.EQ, "13", delay=0.3)
+        await self.command(ATCommand.SET_RESP_FORMAT_CHAR, ATDivider.EQ, "10", delay=0.3)
 
     def _close(self) -> None:
         if self.ser and self.ser.is_open:
@@ -94,6 +97,7 @@ class ATCommander:
 
     def _parse_response(self, response: str, cmd_id_response: Optional[str] = None) -> ATResponse:
         parts = [part for part in response.splitlines() if part]
+
 
         data = [parts] if len(parts) > 1 else None
         if cmd_id_response:
@@ -113,7 +117,7 @@ class ATCommander:
 
         return ATResponse(status=status, data=data)
 
-    def _cmd_read_response(self, cmd_id_response: Optional[str] = None) -> ATResponse:
+    async def _cmd_read_response(self, cmd_id_response: Optional[str] = None) -> ATResponse:
         buffer: str = ""
         try:
             iter_delay = 0.1
@@ -128,11 +132,11 @@ class ATCommander:
                 if any(code.value in buffer for code in ATResultCode):
                     if cmd_id_response is None or cmd_id_response in buffer:
                         return self._parse_response(buffer, cmd_id_response)
-                time.sleep(iter_delay)
+                await asyncio.sleep(iter_delay)
 
             raise SerialSafeReadFailed("Max timeout reached while waiting for response")
         except Exception as e:
-            raise SerialSafeReadFailed(f"Failed to read all bytes from serial device at {self.port}") from e
+            raise SerialSafeReadFailed(f"Failed to read all bytes from serial device at {self.port}, {traceback.print_exc(e)}") from e
 
     def _safe_serial_write(self, data: str) -> None:
         bytes_written = self.ser.write(data.encode("ascii"))
@@ -149,7 +153,7 @@ class ATCommander:
     def __del__(self):
         self._close()
 
-    def raw_command(
+    async def raw_command(
         self,
         command: str,
         delay: Optional[int] = 0.3,
@@ -160,11 +164,11 @@ class ATCommander:
 
         # When we don't have a response to wait for, we should wait before reading, average is 300ms
         if cmd_id_response is None:
-            time.sleep(delay)
+            await asyncio.sleep(delay)
 
-        return self.ser.read_all().decode("ascii") if raw_response else self._cmd_read_response(cmd_id_response)
+        return self.ser.read_all().decode("ascii") if raw_response else (await self._cmd_read_response(cmd_id_response))
 
-    def command(
+    async def command(
         self,
         command: ATCommand,
         divider: ATDivider = ATDivider.UNDEFINED,
@@ -176,57 +180,57 @@ class ATCommander:
         # that will return OK as soon as hit, but after some time return the result as +QPING: ......
         expected_cmd_id = f"+{command.value.split('+')[1]}" if "AT+" in command.value and cmd_id_response else None
 
-        return self.raw_command(
+        return await self.raw_command(
             f"{command.value}{divider.value}{data}\r\n",
             cmd_id_response=expected_cmd_id,
             delay=delay
         )
 
-    def check_ok(self) -> bool:
-        response = self.command(ATCommand.AT, delay=0.1)
+    async def check_ok(self) -> bool:
+        response = await self.command(ATCommand.AT, delay=0.1)
         return response.status == ATResultCode.OK
 
-    def get_mt_info(self) -> ATResponse:
-        return self.command(ATCommand.ATI, cmd_id_response=False)
+    async def get_mt_info(self) -> ATResponse:
+        return await self.command(ATCommand.ATI, cmd_id_response=False)
 
-    def get_manufacturer_info(self) -> ATResponse:
-        return self.command(ATCommand.MANUFACTURER_IDENTIFICATION, cmd_id_response=False)
+    async def get_manufacturer_info(self) -> ATResponse:
+        return await self.command(ATCommand.MANUFACTURER_IDENTIFICATION, cmd_id_response=False)
 
-    def get_model_info(self) -> ATResponse:
-        return self.command(ATCommand.MODEL_IDENTIFICATION, cmd_id_response=False)
+    async def get_model_info(self) -> ATResponse:
+        return await self.command(ATCommand.MODEL_IDENTIFICATION, cmd_id_response=False)
 
-    def get_firmware_info(self) -> ATResponse:
-        return self.command(ATCommand.FIRMWARE_REV_IDENTIFICATION, cmd_id_response=False)
+    async def get_firmware_info(self) -> ATResponse:
+        return await self.command(ATCommand.FIRMWARE_REV_IDENTIFICATION, cmd_id_response=False)
 
-    def get_firmware_version_details(self) -> ATResponse:
-        return self.command(ATCommand.FIRMWARE_VERSION_DETAILS, cmd_id_response=False)
+    async def get_firmware_version_details(self) -> ATResponse:
+        return await self.command(ATCommand.FIRMWARE_VERSION_DETAILS, cmd_id_response=False)
 
-    def get_signal_strength(self) -> ATResponse:
-        return self.command(ATCommand.CHECK_SIGNAL_QUALITY)
+    async def get_signal_strength(self) -> ATResponse:
+        return await self.command(ATCommand.CHECK_SIGNAL_QUALITY)
 
-    def get_operator_info(self) -> ATResponse:
-        return self.command(ATCommand.CONFIGURE_OPERATOR, ATDivider.QUESTION)
+    async def get_operator_info(self) -> ATResponse:
+        return await self.command(ATCommand.CONFIGURE_OPERATOR, ATDivider.QUESTION)
 
-    def get_serial_number(self) -> ATResponse:
-        return self.command(ATCommand.IMEI_SN, ATDivider.EQ, '0')
+    async def get_serial_number(self) -> ATResponse:
+        return await self.command(ATCommand.IMEI_SN, ATDivider.EQ, '0')
 
-    def get_imei(self) -> ATResponse:
-        return self.command(ATCommand.IMEI_SN, ATDivider.EQ, '1')
+    async def get_imei(self) -> ATResponse:
+        return await self.command(ATCommand.IMEI_SN, ATDivider.EQ, '1')
 
-    def get_international_mobile_subscriber_id(self) -> ATResponse:
-        return self.command(ATCommand.IMSI, cmd_id_response=False)
+    async def get_international_mobile_subscriber_id(self) -> ATResponse:
+        return await self.command(ATCommand.IMSI, cmd_id_response=False)
 
-    def get_pdp_info(self) -> ATResponse:
-        return self.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.QUESTION)
+    async def get_pdp_info(self) -> ATResponse:
+        return await self.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.QUESTION)
 
-    def get_clock(self) -> ATResponse:
-        return self.command(ATCommand.CONFIGURE_CLOCK, ATDivider.QUESTION)
+    async def get_clock(self) -> ATResponse:
+        return await self.command(ATCommand.CONFIGURE_CLOCK, ATDivider.QUESTION)
 
-    def reboot_modem(self) -> ATResponse:
-        return self.command(ATCommand.CONFIGURE_FUNCTIONALITY, ATDivider.EQ, '1,1', cmd_id_response=False)
+    async def reboot_modem(self) -> ATResponse:
+        return await self.command(ATCommand.CONFIGURE_FUNCTIONALITY, ATDivider.EQ, '1,1', cmd_id_response=False)
 
-    def disable_modem(self) -> ATResponse:
-        return self.command(ATCommand.CONFIGURE_FUNCTIONALITY, ATDivider.EQ, '0,1', cmd_id_response=False)
+    async def disable_modem(self) -> ATResponse:
+        return await self.command(ATCommand.CONFIGURE_FUNCTIONALITY, ATDivider.EQ, '0,1', cmd_id_response=False)
 
-    def reset_to_factory(self) -> ATResponse:
-        return self.command(ATCommand.RESET_TO_FACTORY, ATDivider.UNDEFINED, '0', cmd_id_response=False)
+    async def reset_to_factory(self) -> ATResponse:
+        return await self.command(ATCommand.RESET_TO_FACTORY, ATDivider.UNDEFINED, '0', cmd_id_response=False)

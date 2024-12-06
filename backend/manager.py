@@ -27,7 +27,7 @@ class ModemManager(metaclass=Singleton):
     async def _configure_modem(self) -> None:
         for connected_modem in Modem.connected_devices():
             try:
-                imei = connected_modem.get_imei()
+                imei = await connected_modem.get_imei()
                 modem_settings = connected_modem._fetch_modem_settings(imei)
 
                 if modem_settings.configured:
@@ -35,10 +35,10 @@ class ModemManager(metaclass=Singleton):
                 logger.info(f"Configuring modem with IMEI: {imei} to default settings.")
 
                 # We want clock to be automatically synced and use cdc_ether
-                connected_modem.set_automatic_time_sync(True)
-                connected_modem.set_usb_net_mode(USBNetMode.ECM)
-                connected_modem.set_auto_data_usage_save(60)
-                connected_modem.reboot()
+                await connected_modem.set_automatic_time_sync(True)
+                await connected_modem.set_usb_net_mode(USBNetMode.ECM)
+                await connected_modem.set_auto_data_usage_save(60)
+                await connected_modem.reboot()
 
                 modem_settings.configured = True
                 connected_modem._save_modem_settings(modem_settings)
@@ -49,7 +49,7 @@ class ModemManager(metaclass=Singleton):
     async def _get_usage_metrics(self) -> None:
         for connected_modem in Modem.connected_devices():
             try:
-                imei = connected_modem.get_imei()
+                imei = await connected_modem.get_imei()
                 modem_settings = connected_modem._fetch_modem_settings(imei)
 
                 # Get current date to use as base for other calculations
@@ -70,13 +70,13 @@ class ModemManager(metaclass=Singleton):
                 ):
                     # In case more than one point is stored, we should clear modem accumulator
                     if len(modem_settings.data_usage.data_points) > 1:
-                        connected_modem.reset_data_usage()
+                        await connected_modem.reset_data_usage()
                         modem_settings.data_usage.last_reset_date = current_date.strftime("%Y-%m-%d")
                     # As we clear the stored data, and after one point will be added, we will keep it updating but
                     # we will not reset the modem accumulator next call since only one point will be stored
                     modem_settings.data_usage.data_points = {}
 
-                data_usage = connected_modem.get_data_usage()
+                data_usage = await connected_modem.get_data_usage()
                 modem_settings.data_usage.data_used = data_usage
                 modem_settings.data_usage.data_points[current_date.strftime("%Y-%m-%d")] = data_usage
                 connected_modem._save_modem_settings(modem_settings)
