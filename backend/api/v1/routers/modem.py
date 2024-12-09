@@ -105,7 +105,7 @@ async def fetch_serving_cell_info_by_id(modem_id: str) -> ModemCellInfo:
 async def command_by_id(
     modem_id: str,
     command: str = Query(..., description="AT Command string to be executed in the modem"),
-    delay: float = Query(0.3, description="Delay in seconds between command sent and response read"),
+    delay: float = Query(0.5, description="Delay in seconds between command sent and response read"),
 ) -> str:
     """
     Execute an AT command in a modem by modem id.

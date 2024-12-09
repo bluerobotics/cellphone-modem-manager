@@ -78,12 +78,12 @@ class ATCommander:
         if not await self.check_ok() and not await self._configure_terminators() and not await self.check_ok():
             raise ATConnectionError(f"Failed to connect to {self.port}")
         # Terminators we can get to work even when not perfect, but echo mode should be disabled
-        await self.command(ATCommand.SET_ECHO_MODE, ATDivider.UNDEFINED, "0", delay=0.3)
+        await self.command(ATCommand.SET_ECHO_MODE, ATDivider.UNDEFINED, "0", delay=0.5)
 
     async def _configure_terminators(self) -> None:
         # Set terminators
-        await self.command(ATCommand.SET_CMD_LINE_TERM, ATDivider.EQ, "13", delay=0.3)
-        await self.command(ATCommand.SET_RESP_FORMAT_CHAR, ATDivider.EQ, "10", delay=0.3)
+        await self.command(ATCommand.SET_CMD_LINE_TERM, ATDivider.EQ, "13", delay=0.5)
+        await self.command(ATCommand.SET_RESP_FORMAT_CHAR, ATDivider.EQ, "10", delay=0.5)
 
     def _close(self) -> None:
         if self.ser and self.ser.is_open:
@@ -156,7 +156,7 @@ class ATCommander:
     async def raw_command(
         self,
         command: str,
-        delay: Optional[int] = 0.3,
+        delay: Optional[int] = 0.5,
         cmd_id_response: Optional[str] = None,
         raw_response: bool = False
     ) -> ATResponse:
@@ -174,7 +174,7 @@ class ATCommander:
         divider: ATDivider = ATDivider.UNDEFINED,
         data: str = "",
         cmd_id_response: bool = True,
-        delay: float = 0.3
+        delay: float = 0.5
     ) -> ATResponse:
         # If commands have AT+ it should include in response it, for async commands like AT+QPING
         # that will return OK as soon as hit, but after some time return the result as +QPING: ......
@@ -187,7 +187,7 @@ class ATCommander:
         )
 
     async def check_ok(self) -> bool:
-        response = await self.command(ATCommand.AT, delay=0.1)
+        response = await self.command(ATCommand.AT, delay=0.3)
         return response.status == ATResultCode.OK
 
     async def get_mt_info(self) -> ATResponse:
