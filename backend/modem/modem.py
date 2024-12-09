@@ -37,9 +37,17 @@ class Modem(abc.ABC):
 
     @staticmethod
     def connected_devices() -> List["Modem"]:
+        def get_all_subclasses(cls: Type) -> List[Type]:
+            subclasses = cls.__subclasses__()
+            for subclass in subclasses:
+                subclasses.extend(get_all_subclasses(subclass))
+            return subclasses
+
         descriptors = get_modem_descriptors()
+        all_modem_classes = get_all_subclasses(Modem)
         return [
-            modem for subclass in Modem.__subclasses__()
+            modem
+            for subclass in all_modem_classes
             for device, ports in descriptors.items()
             if (modem := subclass(device, ports))._detected()
         ]
