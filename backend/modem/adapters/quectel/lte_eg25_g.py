@@ -27,7 +27,7 @@ class LTEEG25G(Modem):
         """
         Any port with manufacturer "Quectel" and product "EG25-G" is considered detected for this implementation.
         """
-        return any(port.manufacturer == "Quectel" and port.product == "EG25-G" for port in self.ports)
+        return any("Quectel" in port.manufacturer and "EG25-G" in port.product for port in self.ports)
 
     def at_commander(self, timeout: int = 10) -> ATCommander:
         # Usually the third port is the AT port in Quectel modems, so try it first
