@@ -3,6 +3,7 @@ from os import path
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
 
 # Routers
@@ -21,7 +22,6 @@ application.include_router(modem_router_v1)
 
 application = VersionedFastAPI(application, prefix_format="/v{major}.{minor}", enable_latest=True)
 
-
 @application.get("/", status_code=200)
 async def root() -> RedirectResponse:
     """
@@ -37,3 +37,6 @@ def register_service() -> RedirectResponse:
 
 # Mount static files
 application.mount("/static", StaticFiles(directory=path.join(path.dirname(__file__), "static")), name="static")
+
+# Enable CORS
+application.add_middleware(CORSMiddleware, allow_origins=["*"])
