@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="d-flex flex-wrap">
+  <v-container v-if="modemDataUsage !== null" fluid class="d-flex flex-wrap">
     <v-col cols="12" md="7">
       <UsageDetails
         :modem="modem"
@@ -14,14 +14,21 @@
       />
     </v-col>
   </v-container>
+  <SpinningLogo
+    v-else
+    size="50"
+    subtitle="Loading modem data usage..."
+  />
 </template>
 
 <script setup lang="ts">
 import { defineProps, onMounted, ref, watch } from 'vue';
 
+import SpinningLogo from '@/components/common/SpinningLogo.vue';
 import ModemManager from '@/services/ModemManager';
-import { ModemDevice, DataUsageSettings, DataUsageControls } from '@/types/ModemManager';
+import { DataUsageControls, DataUsageSettings, ModemDevice } from '@/types/ModemManager';
 
+/** Props / Emits */
 const props = defineProps<{
   modem: ModemDevice;
 }>();
@@ -35,7 +42,7 @@ const fetchDataUsage = async () => {
     const data = await ModemManager.fetchDataUsageById(props.modem.id);
     modemDataUsage.value = data;
   } catch (error) {
-    console.error("Failed to fetch data usage", error);
+    console.error('Failed to fetch Data Usage info, error:', (error as any)?.message);
   }
 };
 
@@ -48,7 +55,7 @@ const onControlsUpdate = async (control: DataUsageControls) => {
     const data = await ModemManager.setDataUsageControlById(props.modem.id, control);
     modemDataUsage.value = data;
   } catch (error) {
-    console.error("Failed to update data usage control", error);
+    console.error('Failed to update Data Usage control, error:', (error as any)?.message);
   }
 }
 
