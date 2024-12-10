@@ -23,8 +23,75 @@ export const getUSBFromDevice = (device: string): string => {
  */
 export const getThumbnailFromProduct = (product: string): string => `/static/thumbs/${product.toLowerCase()}.png`;
 
+/**
+ * Gets the base ApexChart options for modem extension
+ * @param {string} title The title of the chart
+ * @param {string} xTitle The title of the x-axis
+ * @param {string} yTitle The title of the y-axis
+ * @returns {Record<string, any>} The base ApexChart options
+ */
+export const getBaseApexChartOptions = (
+  title?: string,
+  xTitle?: string,
+  yTitle?: string,
+  yMin?: number,
+  yMax?: number
+): Record<string, any> => {
+  return {
+    chart: {
+      toolbar: { show: false },
+      foreColor: 'white'
+    },
+    tooltip: { enabled: false },
+    dataLabels: { enabled: false },
+    title: {
+      text: title,
+      align: 'center',
+      style: {
+        fontSize: '16px',
+        color: 'white'
+      }
+    },
+    yaxis: {
+      title: {
+        text: yTitle,
+        style: {
+          fontSize: '14px',
+          color: 'white'
+        }
+      },
+      labels: {
+        style: {
+          colors: 'white'
+        }
+      },
+      min: yMin,
+      max: yMax
+    },
+    xaxis: {
+      title: {
+        text: xTitle,
+        style: {
+          fontSize: '14px',
+          color: 'white'
+        }
+      },
+      labels: {
+        show: true,
+        style: {
+          colors: 'white'
+        }
+      }
+    },
+    grid: {
+      borderColor: 'white',
+    }
+  };
+}
+
 export default {
   sleep,
   getUSBFromDevice,
   getThumbnailFromProduct,
+  getBaseApexChartOptions,
 }
