@@ -43,6 +43,12 @@ class ModemSIMStatus(Enum):
     CONNECTED = "1"
     UNKNOWN = "2"
 
+
+class ModemFunctionality(Enum):
+    MINIMAL = "0"
+    FULL = "1"
+    BLOCKED = "4"
+
 # Configurations related
 
 class USBNetMode(Enum):

@@ -28,21 +28,23 @@ class QuectelLTEBase(Modem):
         # As base it should never be detected as a modem
         return False
 
-    async def at_commander(self, timeout: int = 10) -> ATCommander:
+    async def at_commander(self, timeout: int = 20) -> ATCommander:
         # Usually the third port is the AT port in Quectel modems, so try it first
         ports = [self.ports[2]] + self.ports[:2] + self.ports[3:] if len(self.ports) > 3 else self.ports
 
         end_time = time.monotonic() + timeout
-        for port in ports:
-            while time.monotonic() < end_time:
+        while time.monotonic() < end_time:
+            for port in ports:
                 if not ATCommander.is_locked(port.device):
+                    commander = None
                     try:
                         commander = ATCommander(port.device)
                         await commander.setup()
                         return commander
                     except Exception:
-                        break
-                await asyncio.sleep(0.1)
+                        if commander is not None:
+                            commander._close()
+            await asyncio.sleep(0.1)
 
         if time.monotonic() < end_time:
             raise ATConnectionError(f"Unable to detect any AT port for device {self.device}")

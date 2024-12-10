@@ -13,6 +13,7 @@ from modem.models import (
     ModemDeviceDetails,
     ModemPosition,
     ModemSignalQuality,
+    ModemFunctionality,
     ModemSIMStatus,
     OperatorInfo,
     PDPContext,
@@ -100,6 +101,17 @@ async def fetch_serving_cell_info_by_id(modem_id: str) -> ModemCellInfo:
     return await modem.get_cell_info()
 
 
+@modem_router_v1.get("/{modem_id}/functionality", status_code=status.HTTP_200_OK)
+@modem_to_http_exception
+async def fetch_functionality_by_id(modem_id: str) -> ModemFunctionality:
+    """
+    Get functionality of a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return await modem.get_functionality()
+
+
 @modem_router_v1.post("/{modem_id}/commander", status_code=status.HTTP_200_OK)
 @modem_to_http_exception
 async def command_by_id(
@@ -131,6 +143,17 @@ async def reboot_by_id(modem_id: str) -> None:
     modem = Modem.get_device(modem_id)
 
     return await modem.reboot()
+
+
+@modem_router_v1.post("/{modem_id}/disable", status_code=status.HTTP_204_NO_CONTENT)
+@modem_to_http_exception
+async def disable_by_id(modem_id: str) -> None:
+    """
+    Disable a modem by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return await modem.disable()
 
 
 @modem_router_v1.post("/{modem_id}/reset", status_code=status.HTTP_204_NO_CONTENT)
