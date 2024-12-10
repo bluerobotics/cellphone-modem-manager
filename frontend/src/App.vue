@@ -7,6 +7,7 @@
         @back="onBack"
         @reboot="onModemReboot"
         @reset="onModemReset"
+        @disable="onModemDisable"
       />
       <v-container
         v-else
@@ -73,32 +74,44 @@ const fetchAvailableModems = async () => {
   }
 };
 
-const initComponent = async (delay: number = 500, title: string = 'Fetching available modems') => {
+const initLoad = (title: string = 'Fetching available modems') => {
   fetchAvailableModemTask.stop();
+  selectedModem.value = null;
+  availableModems.value = [];
   opLoading.value = true;
   opDescription.value = title;
+}
+
+const finishLoad = () => {
+  opLoading.value = false;
+  fetchAvailableModemTask.resume();
+}
+
+const initComponent = async () => {
+  await initLoad();
   await fetchAvailableModems();
 
   /** Since this fetch is USUALLY fast we simulate a delay to avoid glitch */
-  await sleep(delay);
-  opLoading.value = false;
-  fetchAvailableModemTask.resume();
-};
+  await sleep(500);
+  await finishLoad();
+}
 
-const initRebootComponent = async () => {
-  selectedModem.value = null;
-  availableModems.value = [];
-  initComponent(10000, "Rebooting modem");
-};
+const rebootModem = async (action: Promise<void>, title: string = 'Rebooting modem') => {
+  await initLoad(title);
+  await action;
+
+  await sleep(15000);
+  await fetchAvailableModems();
+  await finishLoad();
+}
 
 /** Callbacks */
 const onModemSelected = (modem: ModemDevice) => {
   selectedModem.value = modem;
 };
 
-const onBack = () => {
-  selectedModem.value = null;
-  initComponent();
+const onBack = async () => {
+  await initComponent();
 };
 
 const onModemReboot = async () => {
@@ -107,9 +120,7 @@ const onModemReboot = async () => {
   }
 
   try {
-    await ModemManager.rebootById(selectedModem.value?.id);
-
-    initRebootComponent();
+    rebootModem(ModemManager.rebootById(selectedModem.value?.id));
   } catch (error) {
     opError.value = String((error as any)?.message);
   }
@@ -121,9 +132,19 @@ const onModemReset = async () => {
   }
 
   try {
-    await ModemManager.resetById(selectedModem.value?.id);
+    rebootModem(ModemManager.resetById(selectedModem.value?.id), 'Resetting modem');
+  } catch (error) {
+    opError.value = String((error as any)?.message);
+  }
+};
 
-    initRebootComponent();
+const onModemDisable = async () => {
+  if (selectedModem.value === null) {
+    return;
+  }
+
+  try {
+    rebootModem(ModemManager.disableById(selectedModem.value?.id), 'Disabling modem');
   } catch (error) {
     opError.value = String((error as any)?.message);
   }
@@ -134,6 +155,6 @@ const fetchAvailableModemTask = new OneMoreTime({ delay: 10000, disposeWith: thi
 
 /** Hooks */
 onMounted(async () => {
-  initComponent();
+  await initComponent();
 });
 </script>

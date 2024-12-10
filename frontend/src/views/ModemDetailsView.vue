@@ -29,13 +29,13 @@
       </div>
 
       <div class="action-buttons d-flex justify-md-end justify-xs-start">
-        <v-btn
-          class="ma-2"
-          color="primary"
-          @click="onReboot"
-        >
-          Reboot
-        </v-btn>
+        <v-switch
+          v-if="modemEnabled !== null"
+          v-model="modemEnabled"
+          label="Enable Modem"
+          :color="modemEnabled ? 'primary' : 'grey'"
+          @change="onModemEnabledToggle"
+        />
       </div>
     </v-row>
 
@@ -54,7 +54,11 @@
           <v-card-text>
             <v-tabs-window v-model="selectedTab">
               <v-tabs-window-item value="device">
-                <DeviceDetailsTab :modem="props.modem" @reset="onReset" />
+                <DeviceDetailsTab
+                  :modem="props.modem"
+                  @reset="onReset"
+                  @reboot="onReboot"
+                />
               </v-tabs-window-item>
 
               <v-tabs-window-item value="network">
@@ -77,12 +81,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps } from 'vue';
+import { ref, defineProps, onMounted } from 'vue';
 
 import defaultThumbnail from "@/assets/thumbs/unknown.svg";
 
 import ModemManager from '@/services/ModemManager';
-import { ModemDevice, ModemClockDetails } from '@/types/ModemManager';
+import { ModemDevice, ModemClockDetails, ModemFunctionality } from '@/types/ModemManager';
 
 import NetworkDetailsTab from '@/components/network/NetworkDetailsTab.vue';
 import DeviceDetailsTab from '@/components/device/DeviceDetailsTab.vue';
@@ -95,12 +99,13 @@ import { OneMoreTime } from '@/one-more-time';
 const props = defineProps<{
   modem: ModemDevice;
 }>();
-const emit = defineEmits<(event: 'reboot' | 'back' | 'reset') => void>();
+const emit = defineEmits<(event: 'reboot' | 'back' | 'reset' | 'disable') => void>();
 
 /** States */
 const selectedTab = ref<number>(0);
 const currentClockGmtOffset = ref<number>(0);
 const currentClock = ref<number | null>(null);
+const modemEnabled = ref<boolean | null>(null);
 
 /** Utils */
 const clockToUnix = (clock: ModemClockDetails) => {
@@ -129,6 +134,16 @@ const fetchClock = async () => {
   }
 };
 
+const fetchFunctionality = async () => {
+  try {
+    const func = await ModemManager.fetchFunctionalityById(props.modem.id);
+
+    modemEnabled.value = func != ModemFunctionality.BLOCKED;
+  } catch (error) {
+    console.error("Unable to fetch functionality details from modem device", error);
+  }
+};
+
 const incrementClockLocally = () => {
   if (currentClock.value) {
     currentClock.value += 1000;
@@ -151,6 +166,17 @@ const onBack = () => {
 const onReset = () => {
   emit('reset');
 };
+
+const onModemEnabledToggle = () => {
+  if (modemEnabled.value) {
+    emit('reboot');
+  } else {
+    emit('disable');
+  }
+};
+
+/** Hooks */
+onMounted(fetchFunctionality);
 </script>
 
 <style scoped>

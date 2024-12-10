@@ -12,6 +12,7 @@
     </v-col>
     <v-col cols="12" md="2" class="details-column reset-column">
       <v-btn color="primary" @click="onConsole">Console</v-btn>
+      <v-btn color="primary" @click="onReboot">Reboot</v-btn>
       <v-btn color="warning" @click="onReset">Reset</v-btn>
     </v-col>
   </v-row>
@@ -87,7 +88,7 @@ import SpinningLogo from '@/components/common/SpinningLogo.vue';
 const props = defineProps<{
   modem: ModemDevice;
 }>();
-const emit = defineEmits<(event: 'reset') => void>();
+const emit = defineEmits<(event: 'reset' | 'reboot') => void>();
 
 const ansi = new AnsiUp();
 
@@ -118,6 +119,10 @@ const fetchDeviceDetails = async () => {
 /** Callbacks */
 const onReset = () => {
   showResetDialog.value = true;
+};
+
+const onReboot = () => {
+  emit('reboot');
 };
 
 const onConsole = () => {

@@ -8,6 +8,7 @@ import {
   ModemDevice,
   ModemDeviceDetails,
   ModemPosition,
+  ModemFunctionality,
   ModemSIMStatus,
   ModemSignalQuality,
   NearbyCellTower,
@@ -20,7 +21,7 @@ const MODEM_MANAGER_V1_API = `/v1.0`
 
 const api = axios.create({
   baseURL: MODEM_MANAGER_V1_API,
-  timeout: 15000,
+  timeout: 25000,
 })
 
 /**
@@ -63,6 +64,16 @@ export async function fetchCellInfoById(modemId: string): Promise<ModemCellInfo>
 }
 
 /**
+ * Get current modem functionality by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<ModemFunctionality>}
+ */
+export async function fetchFunctionalityById(modemId: string): Promise<ModemFunctionality> {
+  const response = await api.get(`/modem/${modemId}/functionality`)
+  return response.data as ModemFunctionality
+}
+
+/**
  * Execute an AT command in a modem by modem id.
  * @param {string} modemId - Modem ID
  * @param {string} command - AT command to be executed
@@ -82,6 +93,16 @@ export async function commandById(modemId: string, command: string, delay: numbe
  */
 export async function rebootById(modemId: string): Promise<void> {
   await api.post(`/modem/${modemId}/reboot`)
+}
+
+
+/**
+ * Disable a modem by id.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<void>}
+ */
+export async function disableById(modemId: string): Promise<void> {
+  await api.post(`/modem/${modemId}/disable`)
 }
 
 /**
@@ -215,12 +236,14 @@ export async function fetchNearbyCellsCoordinates(
 
 export default {
   commandById,
+  disableById,
   fetch,
   fetchById,
   fetchCellCoordinates,
   fetchCellInfoById,
   fetchClockById,
   fetchDataUsageById,
+  fetchFunctionalityById,
   fetchNearbyCellsCoordinates,
   fetchOperatorInfoById,
   fetchPDPInfoById,
@@ -233,4 +256,4 @@ export default {
   setAPNByProfileById,
   setDataUsageControlById,
   setUSBModeById,
-}
+};
