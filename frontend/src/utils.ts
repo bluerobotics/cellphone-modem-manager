@@ -89,9 +89,64 @@ export const getBaseApexChartOptions = (
   };
 }
 
+/**
+ * Converts bytes to a human-readable level
+ * @param {number} bytes The bytes to be converted
+ * @returns {[number, string]} The level and unit
+ */
+export const bytesToLevel = (bytes: number, unit?: string): [number, string] => {
+  if (unit) {
+    switch (unit) {
+      case "B":
+        return [bytes, "B"];
+      case "KB":
+        return [bytes / (2 ** 10), "KB"];
+      case "MB":
+        return [bytes / (2 ** 20), "MB"];
+      case "GB":
+        return [bytes / (2 ** 30), "GB"];
+      default:
+        return [bytes, "B"];
+    }
+  }
+
+  if (bytes < 2 ** 10) {
+    return [bytes, "B"];
+  } else if (bytes < 2 ** 20) {
+    return [bytes / (2 ** 10), "KB"];
+  } else if (bytes < 2 ** 30) {
+    return [bytes / (2 ** 20), "MB"];
+  } else {
+    return [bytes / (2 ** 30), "GB"];
+  }
+};
+
+/**
+ * Converts a level to bytes
+ * @param {number} level The level to be converted
+ * @param {string} unit The unit of the level
+ * @returns {number} The bytes
+ */
+export const levelToBytes = (level: number, unit: string): number => {
+  switch (unit) {
+    case "B":
+      return level;
+    case "KB":
+      return level * (2 ** 10);
+    case "MB":
+      return level * (2 ** 20);
+    case "GB":
+      return level * (2 ** 30);
+    default:
+      return 0;
+  }
+};
+
 export default {
   sleep,
   getUSBFromDevice,
   getThumbnailFromProduct,
   getBaseApexChartOptions,
+  bytesToLevel,
+  levelToBytes
 }

@@ -1,28 +1,30 @@
 <template>
-    <v-card class="pa-4">
-      <v-card-text>
-        <apexchart
-          :options="chartOptions"
-          :series="usageChartData"
-          type="line"
-        />
-      </v-card-text>
-    </v-card>
+  <v-card class="pa-4">
+    <v-card-text>
+      <apexchart
+        :options="chartOptions"
+        :series="chartData"
+        type="line"
+      />
+    </v-card-text>
+  </v-card>
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue';
+import { computed, defineProps } from 'vue';
 import dayjs from 'dayjs';
 
-import { ModemDevice, DataUsageSettings } from '@/types/ModemManager';
+import { DataUsageSettings, ModemDevice } from '@/types/ModemManager';
+import { bytesToLevel, getBaseApexChartOptions } from '@/utils';
 
+/** Props / Emits */
 const props = defineProps<{
   modem: ModemDevice;
   dataUsage: DataUsageSettings | null;
 }>();
 
 /** Computed */
-const usageChartData = computed(() => {
+const chartPoints = computed(() => {
   if (!props.dataUsage) {
     return [
       {
@@ -39,63 +41,74 @@ const usageChartData = computed(() => {
   const endDate = startDate.add(1, 'month').add(1, 'day');
 
 
-  /** Create a date array from start to end date */
   const data = [];
   let lastUsage = 0;
   for (let date = startDate; date.isBefore(endDate); date = date.add(1, 'day')) {
     const usage = props.dataUsage.data_points[date.format('YYYY-MM-DD')]
+
+    if (usage) {
+      lastUsage = usage[0] + usage[1];
+    }
+
+
     data.push({
       x: date.format('YYYY-MM-DD'),
-      y: usage ?? lastUsage,
+      y: lastUsage,
     });
   }
 
   return [
     {
       name: 'Usage',
-      data: data,
+      data,
     },
   ];
 });
 
-const chartOptions = computed(() => ({
-  chart: { toolbar: { show: false } },
-  tooltip: { enabled: true },
-  dataLabels: { enabled: false },
-  yaxis: {
-    title: {
-      text: 'Data (GB)',
-      style: {
-        fontSize: '14px',
-        color: 'white'
-      }
+const chartData = computed(() => {
+  const max = Math.max(...chartPoints.value[0].data.map((d: any) => d.y));
+  const [_, unit] = bytesToLevel(max);
+
+  console.log("Unit", unit);
+
+  return [
+    {
+      name: 'Usage',
+      data: chartPoints.value[0].data.map((d: any) => ({
+        x: d.x,
+        y: bytesToLevel(d.y, unit)[0].toFixed(1),
+      })),
     },
-  },
-  xaxis: {
-    type: 'category',
-    categories: usageChartData.value[0]?.data.map(d => d.x), // Dynamically derive categories
-    title: {
-      text: 'Data Usage Since Last Reset',
-      style: {
-        fontSize: '14px',
-        color: 'white'
-      }
+  ];
+});
+
+const chartOptions = computed(() => {
+  const max = Math.max(...chartPoints.value[0].data.map((d: any) => d.y));
+  const [_, unit] = bytesToLevel(max);
+
+  const data = chartPoints.value[0].data;
+  const firstDate = data[0]?.x;
+  const lastDate = data[data.length - 1]?.x;
+
+  const baseOptions = getBaseApexChartOptions(undefined, "Data usage since last reset", unit);
+
+  return {
+    ...baseOptions,
+    xaxis: {
+      ...baseOptions.xaxis,
+      labels: {
+        formatter: (value: string) => {
+          if (value === firstDate || value === lastDate) {
+            return value;
+          }
+          return "";
+        },
+        style: {
+          colors: 'white',
+        },
+      },
     },
-    labels: {
-      rotate: -45, // Rotate for better visibility
-    }
-  },
-  grid: {
-    borderColor: '#444',
-    strokeDashArray: 5,
-  },
-}));
+  }
+})
 
 </script>
-
-<style scoped>
-.v-card {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-</style>

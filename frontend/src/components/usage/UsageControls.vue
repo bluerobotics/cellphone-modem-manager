@@ -55,11 +55,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { defineProps } from 'vue';
+import { defineProps, ref, watch } from 'vue';
 
-import { ModemDevice, DataUsageSettings, DataUsageControls } from '@/types/ModemManager';
+import { DataUsageControls, DataUsageSettings, ModemDevice } from '@/types/ModemManager';
+import { bytesToLevel, levelToBytes } from '@/utils';
 
+/** Props / Emits */
 const props = defineProps<{
   modem: ModemDevice;
   dataUsage: DataUsageSettings | null;
@@ -77,34 +78,6 @@ const validDataAlertUnits = ["B", "KB", "MB", "GB"];
 const resetDayRules = [
   (v: number) => v >= 1 && v <= 31 || "Day must be between 1 and 31",
 ];
-
-/** Utils */
-const bytesToLevel = (bytes: number): [number, string] => {
-  if (bytes < 2 ** 10) {
-    return [bytes, "B"];
-  } else if (bytes < 2 ** 20) {
-    return [bytes / (2 ** 10), "KB"];
-  } else if (bytes < 2 ** 30) {
-    return [bytes / (2 ** 20), "MB"];
-  } else {
-    return [bytes / (2 ** 30), "GB"];
-  }
-};
-
-const levelToBytes = (level: number, unit: string): number => {
-  switch (unit) {
-    case "B":
-      return level;
-    case "KB":
-      return level * (2 ** 10);
-    case "MB":
-      return level * (2 ** 20);
-    case "GB":
-      return level * (2 ** 30);
-    default:
-      return 0;
-  }
-};
 
 /** Watchers */
 watch(() => props.dataUsage, (dataUsage) => {
