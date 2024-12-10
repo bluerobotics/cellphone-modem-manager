@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="d-flex flex-wrap align-center">
-      <v-col cols="12" md="4" class="operator-col">
-    <ModemOperatorDetails :modem="modem" />
+    <v-col cols="12" md="4" class="operator-col">
+      <ModemOperatorDetails :modem="modem" />
     </v-col>
     <v-col cols="12" md="8" class="device-col">
       <ModemDeviceDetails :modem="modem" @reset="onReset"/>
