@@ -1,72 +1,69 @@
 <template>
-  <v-col cols="12" md="6" class="serving-cell-col">
-    <apexchart :options="chartOptions" :series="signalQualityChartData" type="line"></apexchart>
-  </v-col>
+  <v-row v-if="cellInfo" class="device-details-container">
+    <v-col cols="12" class="base-column title-column">
+      <v-card-title>Serving Cell Info</v-card-title>
+    </v-col>
+    <v-divider />
+    <v-col cols="12" class="base-column details-column">
+      <p class="fixed-text"><strong>RAT:</strong> {{ cellInfo?.serving_cell.rat ?? 'N/A' }}</p>
+      <p class="fixed-text"><strong>STATE:</strong> {{ cellInfo?.serving_cell.state ?? 'N/A' }}</p>
+    </v-col>
+    <v-col cols="12" class="base-column details-column">
+      <p class="fixed-text"><strong>MCC:</strong> {{ cellInfo?.serving_cell.mobile_country_code ?? 'N/A' }}</p>
+      <p class="fixed-text"><strong>MNC:</strong> {{ cellInfo?.serving_cell.mobile_network_code ?? 'N/A' }}</p>
+      <p class="fixed-text"><strong>AREA:</strong> {{ cellInfo?.serving_cell.area_id ?? 'N/A' }}</p>
+      <p class="fixed-text"><strong>ID:</strong> {{ cellInfo?.serving_cell.cell_id ?? 'N/A' }}</p>
+    </v-col>
+    <v-divider />
+    <v-col cols="12">
+      <apexchart :options="chartOptions" :series="chartData" type="line" class="chart"></apexchart>
+    </v-col>
+  </v-row>
+  <SpinningLogo
+    v-else
+    subtitle="Fetching Serving cell info..."
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineProps } from 'vue';
-import ModemManager from '@/services/ModemManager';
-import { ModemDevice, ModemCellInfo } from '@/types/ModemManager';
-import { OneMoreTime } from '@/one-more-time';
+import { computed, defineProps, onMounted, ref } from 'vue';
 
+import SpinningLogo from '@/components/common/SpinningLogo.vue';
+import { OneMoreTime } from '@/one-more-time';
+import ModemManager from '@/services/ModemManager';
+import { ModemCellInfo, ModemDevice } from '@/types/ModemManager';
+import { getBaseApexChartOptions } from '@/utils';
+
+/** Props / Emits */
 const props = defineProps<{
   modem: ModemDevice;
   cellInfo: ModemCellInfo | null;
 }>();
 
 /** States */
-const signalQualityData = ref<number[]>([]);
+const signalStrengthData = ref<number[]>([]);
 
 /** Computed */
-const signalQualityChartData = computed(() => {
-  return [{
+const chartData = computed(() => [
+  {
     name: 'Signal',
-    data: signalQualityData.value,
-  }];
-});
-
-const chartOptions = {
-  chart: { toolbar: { show: false } },
-  tooltip: { enabled: false },
-  dataLabels: { enabled: false },
-  yaxis: {
-    title: {
-      text: 'dBm',
-      style: {
-        fontSize: '14px',
-        color: 'white'
-      }
-    },
-    min: -100,
-    max: 0,
-  },
-  xaxis: {
-    title: {
-      text: 'Serving Cell Signal Quality',
-      style: {
-        fontSize: '14px',
-        color: 'white'
-      }
-    },
-    labels: {
-      show: false
-    }
+    data: signalStrengthData.value,
   }
-};
+]);
+
+const chartOptions = getBaseApexChartOptions(undefined, "Signal Strength", "dBm", -100, 0);
 
 /** Utils */
-
 const fetchSignalStrength = async () => {
   try {
-    const quality = await ModemManager.fetchSignalStrengthById(props.modem.id);
+    const strength = await ModemManager.fetchSignalStrengthById(props.modem.id);
 
-    if (signalQualityData.value.length >= 200) {
-      signalQualityData.value.shift();
+    if (signalStrengthData.value.length >= 200) {
+      signalStrengthData.value.shift();
     }
-    signalQualityData.value.push(quality.signal_strength_dbm);
+    signalStrengthData.value.push(strength.signal_strength_dbm);
   } catch (error) {
-    console.error('Failed to fetch signal strength', (error as any)?.message);
+    console.error('Failed to fetch Signal Strength point, error:', (error as any)?.message);
   }
 };
 
@@ -75,17 +72,30 @@ new OneMoreTime({ delay: 10000, disposeWith: this }, fetchSignalStrength);
 
 /** Hooks */
 onMounted(async () => {
-  fetchSignalStrength();
+  await fetchSignalStrength();
 });
 </script>
 
 <style scoped>
-.serving-cell-col {
-  flex: 1;
-  flex-grow: 1;
+.device-details-container {
   display: flex;
-  flex-direction: column;
-  min-width: 500px;
-  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.base-column {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  font-size: 18px;
+  justify-content: center;
+}
+
+.title-column {
+  justify-content: center;
+}
+
+.chart {
+  margin-top: 20px;
 }
 </style>

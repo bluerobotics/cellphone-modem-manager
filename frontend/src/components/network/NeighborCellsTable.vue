@@ -5,17 +5,15 @@
   >
     <strong>No nearby cells info available.</strong>
   </div>
-  <div v-else>
-    <v-card-text>
-      <v-row class="virtual-table-row">
-        <v-col
-          v-for="column in tableColumns"
-          class="virtual-table-cell"
-        >
-          <strong>{{ column }}</strong>
-        </v-col>
-      </v-row>
-    </v-card-text>
+  <v-card v-else>
+    <v-row class="pt-3 virtual-table-row">
+      <v-col
+        v-for="column in tableColumns"
+        class="virtual-table-cell title-table-cell"
+      >
+        <strong>{{ column }}</strong>
+      </v-col>
+    </v-row>
     <v-virtual-scroll
       :items="tableData"
       height="300"
@@ -33,13 +31,15 @@
         </v-row>
       </template>
     </v-virtual-scroll>
-  </div>
+  </v-card>
 </template>
 
 <script setup lang="ts">
 import { computed, defineProps } from 'vue';
+
 import { ModemCellInfo, NeighborCellInfo } from '@/types/ModemManager';
 
+/** Props / Emits */
 const props = defineProps<{
   cellInfo: ModemCellInfo | null;
 }>();
@@ -103,6 +103,11 @@ const tableData = computed<string[][]>(() => {
   padding: 5px;
   height: 30px;
   min-width: 60px;
+  text-wrap: nowrap;
+}
+
+.title-table-cell {
+  font-weight: bold;
   text-wrap: nowrap;
 }
 
