@@ -4,7 +4,11 @@
       <ModemOperatorDetails :modem="modem" />
     </v-col>
     <v-col cols="12" md="8" class="device-col">
-      <ModemDeviceDetails :modem="modem" @reset="onReset"/>
+      <ModemDeviceDetails
+        :modem="modem"
+        @reset="onReset"
+        @reboot="onReboot"
+      />
     </v-col>
   </v-container>
 </template>
@@ -20,11 +24,15 @@ import ModemDeviceDetails from './ModemDeviceDetails.vue';
 defineProps<{
   modem: ModemDevice;
 }>();
-const emit = defineEmits<(event: 'reset') => void>();
+const emit = defineEmits<(event: 'reset' | 'reboot') => void>();
 
 /** Callbacks */
 const onReset = () => {
   emit('reset');
+};
+
+const onReboot = () => {
+  emit('reboot');
 };
 </script>
 

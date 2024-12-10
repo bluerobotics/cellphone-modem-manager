@@ -41,6 +41,12 @@ export enum ModemSIMStatus {
   UNKNOWN = "2",
 }
 
+export enum ModemFunctionality {
+  MINIMAL = "0",
+  FULL = "1",
+  BLOCKED = "4",
+}
+
 export interface DataUsageControls {
   data_control_enabled: boolean
   // Data limit in bytes, default is 2GB
