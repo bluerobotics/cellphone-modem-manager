@@ -18,6 +18,7 @@ from modem.models import (
     ModemPosition,
     ModemSignalQuality,
     ModemSIMStatus,
+    ModemFunctionality,
     OperatorInfo,
     PDPContext,
     USBNetMode,
@@ -127,6 +128,15 @@ class Modem(abc.ABC):
     @with_at_commander
     async def reboot(self, cmd: ATCommander) -> None:
         await cmd.reboot_modem()
+
+    @with_at_commander
+    async def disable(self, cmd: ATCommander) -> None:
+        await cmd.disable_modem()
+
+    @with_at_commander
+    async def get_functionality(self, cmd: ATCommander) -> ModemFunctionality:
+        response = await cmd.command(ATCommand.CONFIGURE_FUNCTIONALITY, ATDivider.QUESTION)
+        return ModemFunctionality(response.data[0][0])
 
     @with_at_commander
     async def factory_reset(self, cmd: ATCommander) -> None:
