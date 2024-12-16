@@ -215,7 +215,10 @@ class ATCommander:
         return await self.command(ATCommand.IMEI_SN, ATDivider.EQ, '0')
 
     async def get_imei(self) -> ATResponse:
-        return await self.command(ATCommand.IMEI_SN, ATDivider.EQ, '1')
+        try:
+            return await self.command(ATCommand.IMEI_SN, cmd_id_response=False)
+        except SerialSafeReadFailed:
+            return await self.command(ATCommand.IMEI_SN, ATDivider.EQ, '1')
 
     async def get_international_mobile_subscriber_id(self) -> ATResponse:
         return await self.command(ATCommand.IMSI, cmd_id_response=False)
