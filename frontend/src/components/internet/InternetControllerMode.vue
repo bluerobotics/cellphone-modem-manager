@@ -4,13 +4,13 @@
       Internet Controller Mode
     </v-card-title>
     <v-card-text
-      v-if="selected_internet_mode !== null"
+      v-if="selectedInternetMode !== null"
       class="pt-2 d-flex flex-column align-center"
     >
       <v-radio-group
-        v-model="selected_internet_mode"
+        v-model="selectedInternetMode"
         inline
-        @change="onInternetModeChange"
+        @change="onInternetModeChangeRequest"
         class="justify-center"
       >
         <v-radio key="qmi" label="QMI" :value="USBNetMode.QMI" />
@@ -23,11 +23,41 @@
       size="50"
       subtitle="Loading internet controller mode..."
     />
+
+    <v-dialog v-model="showChangeDialog" max-width="400px">
+      <v-card class="pa-2">
+        <v-card-title>Confirm Internet Mode Change</v-card-title>
+        <v-card-text v-if="!savingInternetMode">
+          You are about to change from {{ currentModeLabel }} to {{ newModeLabel }}. Are you sure?
+        </v-card-text>
+        <SpinningLogo
+          v-else
+          subtitle="Saving new internet controller mode"
+        />
+        <v-card-actions class="justify-center pa-2">
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            :disabled="savingInternetMode"
+            @click="onCancelChange"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="red"
+            :disabled="savingInternetMode"
+            @click="onConfirmChange"
+          >
+            Confirm
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineProps } from 'vue';
+import { ref, onMounted, defineProps, computed } from 'vue';
 import ModemManager from '@/services/ModemManager';
 import { ModemDevice, USBNetMode } from '@/types/ModemManager';
 import SpinningLogo from '@/components/common/SpinningLogo.vue';
@@ -37,13 +67,33 @@ const props = defineProps<{
 }>();
 
 /** States */
-const selected_internet_mode = ref<USBNetMode | null>(null);
+const selectedInternetMode = ref<USBNetMode | null>(null);
+const originalInternetMode = ref<USBNetMode | null>(null);
+const pendingInternetMode = ref<USBNetMode | null>(null);
+const showChangeDialog = ref(false);
+const savingInternetMode = ref(false);
+
+/** Display helpers */
+const modeLabels = {
+  [USBNetMode.QMI]: 'QMI',
+  [USBNetMode.ECM]: 'ECM',
+  [USBNetMode.MBIM]: 'MBIM'
+};
+
+const currentModeLabel = computed(() => {
+  return originalInternetMode.value ? modeLabels[originalInternetMode.value] : '';
+});
+
+const newModeLabel = computed(() => {
+  return pendingInternetMode.value ? modeLabels[pendingInternetMode.value] : '';
+});
 
 /** Utils */
-
 const fetchCurrentInternetControllerMode = async () => {
   try {
-    selected_internet_mode.value = await ModemManager.fetchUSBModeById(props.modem.id);
+    const currentMode = await ModemManager.fetchUSBModeById(props.modem.id);
+    selectedInternetMode.value = currentMode;
+    originalInternetMode.value = currentMode;
   } catch (error) {
     console.error("Failed to get current internet controller mode", error);
   }
@@ -59,17 +109,34 @@ const setInternetControllerMode = async (mode: USBNetMode) => {
 };
 
 /** Callbacks */
-const onInternetModeChange = async () => {
-  if (!selected_internet_mode.value) {
-    return;
+const onInternetModeChangeRequest = () => {
+  if (originalInternetMode.value && selectedInternetMode.value !== originalInternetMode.value) {
+    pendingInternetMode.value = selectedInternetMode.value;
+    showChangeDialog.value = true;
   }
+};
 
-  await setInternetControllerMode(selected_internet_mode.value);
+const onConfirmChange = async () => {
+  savingInternetMode.value = true;
+  if (pendingInternetMode.value) {
+    await setInternetControllerMode(pendingInternetMode.value);
+    originalInternetMode.value = pendingInternetMode.value;
+    selectedInternetMode.value = pendingInternetMode.value;
+  }
   await fetchCurrentInternetControllerMode();
+  showChangeDialog.value = false;
+  pendingInternetMode.value = null;
+  savingInternetMode.value = false;
+};
+
+const onCancelChange = () => {
+  selectedInternetMode.value = originalInternetMode.value;
+  showChangeDialog.value = false;
+  pendingInternetMode.value = null;
 };
 
 /** Hooks */
 onMounted(async () => {
-  fetchCurrentInternetControllerMode();
+  await fetchCurrentInternetControllerMode();
 });
 </script>
