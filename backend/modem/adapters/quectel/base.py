@@ -65,18 +65,33 @@ class QuectelLTEBase(Modem):
         # OK
         response = (await cmd.get_mt_info()).data[0]
         firmware = (await cmd.get_firmware_version_details()).data[0]
-        imei = (await cmd.get_imei()).data[0]
-        serial_number = (await cmd.get_serial_number()).data[0]
-        imsi = (await cmd.get_international_mobile_subscriber_id()).data[0]
+
+        imei = None
+        try:
+            imei = (await cmd.get_imei()).data[0][0]
+        except Exception:
+            pass
+
+        serial_number = None
+        try:
+            serial_number = (await cmd.get_serial_number()).data[0][0]
+        except Exception:
+            pass
+
+        imsi = None
+        try:
+            imsi = (await cmd.get_international_mobile_subscriber_id()).data[0][0]
+        except Exception:
+            pass
 
         return ModemDeviceDetails(
             device=self.device,
             id=self.id,
             manufacturer=response[0],
             product=response[1],
-            imei=imei[0],
-            imsi=imsi[0],
-            serial_number=serial_number[0],
+            imei=imei,
+            imsi=imsi,
+            serial_number=serial_number,
             firmware_revision=ModemFirmwareRevision(
                 firmware_revision=firmware[0].replace("VERSION: ", ""),
                 timestamp=firmware[1],
