@@ -19,10 +19,10 @@ class ModemFirmwareRevision(BaseModel):
 
 
 class ModemDeviceDetails(ModemDevice):
-    imei: str
-    serial_number: str
-    imsi: Optional[str] = None
     firmware_revision: ModemFirmwareRevision
+    imei: Optional[str] = None
+    serial_number: Optional[str] = None
+    imsi: Optional[str] = None
 
 
 class ModemClockDetails(BaseModel):
