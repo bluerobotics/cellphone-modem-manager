@@ -81,10 +81,10 @@ class ModemManager(metaclass=Singleton):
                 modem_settings.data_usage.data_points[current_date.strftime("%Y-%m-%d")] = data_usage
                 connected_modem._save_modem_settings(modem_settings)
 
+                await MAVLink2Rest.send_named_float("DATA_USED", modem_settings.data_usage.total_data_used())
+
                 if not modem_settings.data_usage.data_control_enabled:
                     continue
-
-                await MAVLink2Rest.send_named_float("DATA_USED", modem_settings.data_usage.total_data_used())
 
                 if modem_settings.data_usage.total_data_used() > modem_settings.data_usage.data_limit:
                     await MAVLink2Rest.send_status_text(
