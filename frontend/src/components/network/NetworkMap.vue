@@ -1,7 +1,9 @@
 <template>
   <div v-if="servingLocation !== null || vehicleLocation !== null" class="map-container" ref="mapContainer"></div>
   <div v-else class="no-info-available">
-    <strong>No nearby cells info available. Unable to render Map.</strong>
+    <p style="max-width: 400px; text-align: justify;">
+      <strong>No nearby cell information available. Your vehicle may not have a GPS lock, or serving tower data might be temporarily unavailable.</strong>
+    </p>
   </div>
 </template>
 
