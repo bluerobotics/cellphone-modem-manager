@@ -95,17 +95,21 @@ class ModemManager(metaclass=Singleton):
 
     async def _get_external_positioning(self) -> None:
         try:
-            data = await MAVLink2Rest.get_global_position()
-            if not data:
+            positions = [
+                await MAVLink2Rest.get_global_position(id)
+                for id in await MAVLink2Rest.get_valid_vehicle_ids()
+            ]
+            if not any(positions):
                 return
 
-            raw_latitude = data.get("lat", 0)
-            raw_longitude = data.get("lon", 0)
+            for position in positions:
+                raw_latitude = position.get("lat", 0)
+                raw_longitude = position.get("lon", 0)
 
-            if raw_latitude == 0 or raw_longitude == 0:
-                return Modem.clear_external_positioning()
+                if raw_latitude != 0 or raw_longitude != 0:
+                    return Modem.set_external_positioning(raw_latitude / 1e7, raw_longitude / 1e7)
 
-            Modem.set_external_positioning(raw_latitude / 1e7, raw_longitude / 1e7)
+            return Modem.clear_external_positioning()
         except Exception as e:
             logger.error(f"Error getting external positioning: {e}")
 
