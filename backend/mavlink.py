@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List
 
 import aiohttp
 
@@ -66,15 +66,38 @@ class MAVLink2Rest:
         await cls._post_data(data)
 
     @classmethod
-    async def get_global_position(cls) -> Optional[Dict]:
+    async def get_valid_vehicle_ids(cls) -> List[str]:
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {"Accept": "application/json"}
-                async with session.get(MAVLink2Rest.api_url, headers=headers) as resp:
+                async with session.get(
+                    f"{MAVLink2Rest.api_url}/vehicles",
+                    headers=headers
+                ) as resp:
+                    resp.raise_for_status()
+                    data: Dict[str, Any] = await resp.json()
+
+                    return [
+                        vehicle_id
+                        for vehicle_id, vehicle in data.items()
+                        if vehicle.get("components", {}).get("1", {}).get("messages", {}).get("HEARTBEAT")
+                    ]
+        except Exception:
+            return []
+
+    @classmethod
+    async def get_global_position(cls, id: str) -> Dict:
+        try:
+            async with aiohttp.ClientSession() as session:
+                headers = {"Accept": "application/json"}
+                async with session.get(
+                    f"{MAVLink2Rest.api_url}/vehicles/{id}/components/1/messages/GLOBAL_POSITION_INT",
+                    headers=headers
+                ) as resp:
                     resp.raise_for_status()
                     data = await resp.json()
 
                     # If some data is missing, will return None
-                    return data["vehicles"]["1"]["components"]["1"]["messages"]["GLOBAL_POSITION_INT"]["message"]
+                    return data["message"]
         except Exception:
-            return None
+            return {}
