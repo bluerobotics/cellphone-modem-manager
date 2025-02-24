@@ -2,6 +2,13 @@
   <v-card class="align-center text-center" elevation="0">
     <v-card-title class="ma-0 pa-0 text-center">
       Modem PDP Contexts
+      <v-icon
+        @click="showInfoDialog = true"
+        size="24"
+        class="ml-2"
+      >
+        mdi-information-outline
+      </v-icon>
     </v-card-title>
     <v-card-text class="pt-2" style="margin: 0; padding: 0;">
       <v-row class="virtual-table-row">
@@ -87,6 +94,31 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+  <v-dialog v-model="showInfoDialog" max-width="550px">
+    <v-card class="pa-2">
+      <v-card-title>PDP Context Information</v-card-title>
+      <v-card-text class="text-justify">
+        A <strong>PDP (Packet Data Protocol) context</strong> specifies parameters for a connection between the modem and the mobile network.
+
+        <v-divider class="my-2"></v-divider>
+
+        <strong>Each PDP context consists of:</strong>
+        <ul class="ml-4">
+          <li><strong>Profile:</strong> Identifies the context number.</li>
+          <li><strong>Protocol:</strong> Defines the protocol type (e.g., IPv4, IPv6, IPv4v6).</li>
+          <li><strong>APN: </strong> Acts as a gateway between a mobile network (GSM, GPRS, 3G, 4G) and another network, such as the public or private Internet</li>
+        </ul>
+
+        <v-divider class="my-2"></v-divider>
+
+        <strong>Note:</strong> For <strong>private connections</strong>, the service provider may supply a specific <strong>APN</strong>, which users must configure to access the private network.
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn color="primary" @click="showInfoDialog = false">Got it</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -105,6 +137,7 @@ const pdpContext = ref<PDPContext[]>([]);
 const editingPDP = ref<PDPContext | null>(null);
 const pdpAPN = ref<string>('');
 const showEditPDPDialog = ref(false);
+const showInfoDialog = ref(false);
 const savingAPN = ref(false);
 
 /** Utils */
