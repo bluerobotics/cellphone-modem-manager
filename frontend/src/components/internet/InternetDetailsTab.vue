@@ -2,6 +2,7 @@
   <v-container fluid class="d-flex flex-wrap align-center">
     <v-col cols="12" md="8" class="pdp-col">
       <InternetControllerMode
+        v-if="isDevMode"
         class="mb-2"
         :modem="modem"
       />
@@ -21,6 +22,7 @@ import { ModemDevice } from '@/types/ModemManager';
 import PDPContextDetails from './PDPContextDetails.vue';
 import InternetControllerMode from './InternetControllerMode.vue';
 import InternetSpeed from './InternetSpeed.vue';
+import { isDevMode } from '@/storage';
 
 defineProps<{
   modem: ModemDevice;

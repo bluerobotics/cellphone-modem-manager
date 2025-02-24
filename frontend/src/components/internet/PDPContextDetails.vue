@@ -90,11 +90,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps } from 'vue';
+import { ref, defineProps, watch } from 'vue';
 import ModemManager from '@/services/ModemManager';
 import { ModemDevice, PDPContext, PDPType } from '@/types/ModemManager';
 import { OneMoreTime } from '@/one-more-time';
 import SpinningLogo from '@/components/common/SpinningLogo.vue';
+import { isDevMode } from '@/storage';
 
 const props = defineProps<{
   modem: ModemDevice;
@@ -108,9 +109,15 @@ const showEditPDPDialog = ref(false);
 const savingAPN = ref(false);
 
 /** Utils */
-const fetchPDPContext = async () => {
+const fetchPDPContext = async (devMode?: boolean) => {
   try {
     pdpContext.value = await ModemManager.fetchPDPInfoById(props.modem.id);
+
+    /** In case user is not on dev mode only shows PDP profile with ID 1 */
+    const mode = devMode ?? isDevMode.value;
+    if (!mode) {
+      pdpContext.value = pdpContext.value.filter(pdp => pdp.context_id === 1);
+    }
   } catch (error) {
     console.error("Failed to fetch PDP info", error);
   }
@@ -147,6 +154,13 @@ const onEditPDP = async () => {
     savingAPN.value = false;
   }
 }
+
+const onDevModeChange = async (mode: boolean) => {
+  await fetchPDPContext(mode);
+}
+
+/** Watchers */
+watch(isDevMode, onDevModeChange, { immediate: true });
 
 /** Tasks */
 new OneMoreTime({ delay: 30000, disposeWith: this }, fetchPDPContext);

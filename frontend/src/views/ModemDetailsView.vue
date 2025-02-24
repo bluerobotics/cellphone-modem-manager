@@ -5,6 +5,23 @@
         <v-icon size="30">mdi-arrow-left</v-icon>
       </v-btn>
       <v-toolbar-title>{{ props.modem.manufacturer }} / {{ props.modem.product }}</v-toolbar-title>
+      <v-tooltip bottom>
+        <template #activator="{ props }">
+          <v-btn
+            icon
+            v-bind="props"
+            @click="onDevModeChange"
+          >
+            <v-icon
+              size="30"
+              :color="isDevMode ? 'red' : 'foreground'"
+            >
+              {{ isDevMode ? 'mdi-skull' : 'mdi-robot' }}
+            </v-icon>
+          </v-btn>
+        </template>
+        <span>{{ isDevMode ? 'Leave developer mode' : 'Enter developer mode' }}</span>
+      </v-tooltip>
     </v-toolbar>
 
     <v-row class="d-flex align-center justify-space-between">
@@ -95,6 +112,7 @@ import UsageDetailsTab from '@/components/usage/UsageDetailsTab.vue';
 
 import { getThumbnailFromProduct, getUSBFromDevice } from '@/utils';
 import { OneMoreTime } from '@/one-more-time';
+import { isDevMode } from '@/storage';
 
 const props = defineProps<{
   modem: ModemDevice;
@@ -173,6 +191,10 @@ const onModemEnabledToggle = () => {
   } else {
     emit('disable');
   }
+};
+
+const onDevModeChange = () => {
+  isDevMode.value = !isDevMode.value;
 };
 
 /** Hooks */

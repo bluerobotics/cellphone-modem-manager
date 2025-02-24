@@ -45,6 +45,7 @@ import ModemManager from '@/services/ModemManager';
 
 import { sleep } from './utils';
 import { OneMoreTime } from './one-more-time';
+import { initStorage } from './storage';
 
 
 /** States */
@@ -155,6 +156,7 @@ const fetchAvailableModemTask = new OneMoreTime({ delay: 10000, disposeWith: thi
 
 /** Hooks */
 onMounted(async () => {
+  initStorage();
   await initComponent();
 });
 </script>

@@ -11,7 +11,13 @@
       <p class="fixed-text"><strong>-</strong> {{ deviceDetails?.firmware_revision.authors ?? 'N/A'}}</p>
     </v-col>
     <v-col cols="12" md="2" class="details-column reset-column">
-      <v-btn color="primary" @click="onConsole">Console</v-btn>
+      <v-btn
+        v-if="isDevMode"
+        color="primary"
+        @click="onConsole"
+      >
+        Console
+      </v-btn>
       <v-btn color="primary" @click="onReboot">Reboot</v-btn>
       <v-btn color="warning" @click="onReset">Reset</v-btn>
     </v-col>
@@ -84,6 +90,7 @@ import ModemManager from '@/services/ModemManager';
 import { ModemDevice, ModemDeviceDetails } from '@/types/ModemManager';
 
 import SpinningLogo from '@/components/common/SpinningLogo.vue';
+import { isDevMode } from '@/storage';
 
 const props = defineProps<{
   modem: ModemDevice;
