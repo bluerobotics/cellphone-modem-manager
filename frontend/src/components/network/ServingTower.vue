@@ -51,7 +51,7 @@ const chartData = computed(() => [
   }
 ]);
 
-const chartOptions = getBaseApexChartOptions(undefined, "Signal Strength", "dBm", -100, 0);
+const chartOptions = getBaseApexChartOptions(undefined, "Signal Strength", "dBm", -100, 0, false);
 
 /** Utils */
 const fetchSignalStrength = async () => {

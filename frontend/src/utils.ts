@@ -35,7 +35,8 @@ export const getBaseApexChartOptions = (
   xTitle?: string,
   yTitle?: string,
   yMin?: number,
-  yMax?: number
+  yMax?: number,
+  showXAxisLabels?: boolean
 ): Record<string, any> => {
   return {
     chart: {
@@ -77,7 +78,7 @@ export const getBaseApexChartOptions = (
         }
       },
       labels: {
-        show: true,
+        show: showXAxisLabels ?? true,
         style: {
           colors: 'white'
         }
