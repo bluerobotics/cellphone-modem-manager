@@ -2,10 +2,17 @@
   <v-card class="align-center text-center" elevation="0">
     <v-card-title class="ma-0 pa-0 text-center">
       Internet Controller Mode
+      <v-icon
+        @click="showInfoDialog = true"
+        size="24"
+        class="ml-2"
+      >
+        mdi-information-outline
+      </v-icon>
     </v-card-title>
     <v-card-text
       v-if="selectedInternetMode !== null"
-      class="pt-2 d-flex flex-column align-center"
+      class="pt-3 d-flex flex-column align-center"
     >
       <v-radio-group
         v-model="selectedInternetMode"
@@ -53,6 +60,31 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="showInfoDialog" max-width="550px">
+      <v-card class="pa-2">
+        <v-card-title>Internet Controller Modes</v-card-title>
+        <v-card-text class="text-justify">
+          Modems support different <strong>Internet Controller Modes</strong> that define how they interface with the operating system for data transmission.
+
+          <v-divider class="my-2"></v-divider>
+
+          <strong>Common Modes:</strong>
+          <ul class="ml-4">
+            <li><strong>QMI (Qualcomm MSM Interface):</strong> A proprietary high-performance protocol used in <strong>(Qualcomm/Quectel)</strong> based modems. Requires specific drivers for proper operation.</li>
+            <li><strong>ECM (Ethernet Control Model):</strong> A standard USB networking mode that presents the modem as an Ethernet device.</li>
+            <li><strong>MBIM (Mobile Broadband Interface Model):</strong> A modern, efficient mode designed for mobile broadband devices, commonly used in Windows and Linux.</li>
+          </ul>
+
+          <v-divider class="my-2"></v-divider>
+
+          <strong>Warning:</strong> Changing the Internet Controller Mode can affect modem compatibility and connectivity. <strong>Do not change this setting unless you know what you're doing.</strong>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" @click="showInfoDialog = false">Got it</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
@@ -71,6 +103,7 @@ const selectedInternetMode = ref<USBNetMode | null>(null);
 const originalInternetMode = ref<USBNetMode | null>(null);
 const pendingInternetMode = ref<USBNetMode | null>(null);
 const showChangeDialog = ref(false);
+const showInfoDialog = ref(false);
 const savingInternetMode = ref(false);
 
 /** Display helpers */
