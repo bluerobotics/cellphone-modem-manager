@@ -18,3 +18,9 @@ jobs:
           docker-password: ${{ secrets.DOCKER_PASSWORD }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image-name: 'cellphone-modem-manager'
+
+      - name: Build and Publish Extension in BlueOS Cloud
+        uses: bluerobotics/blueos-cloud-action@0.0.3
+        with:
+          BCLOUD_PAT: ${{ secrets.BCLOUD_PAT }}
+          EXTENSION: 441a2bc1-b47f-4926-bd4b-c797dbc72efe
