@@ -10,7 +10,7 @@ from fastapi_versioning import VersionedFastAPI
 from api.v1.routers import blueos_router_v1, cells_router_v1, index_router_v1, modem_router_v1
 
 application = FastAPI(
-    title="Cellphone Modem Manager Configuration API",
+    title="Cellular Modem Manager Configuration API",
     description="This extension API provides ways to configure and explore resources of cellphone modems",
 )
 
@@ -25,7 +25,7 @@ application = VersionedFastAPI(application, prefix_format="/v{major}.{minor}", e
 @application.get("/", status_code=200)
 async def root() -> RedirectResponse:
     """
-    Root endpoint for Cellphone Modem Manager extension.
+    Root endpoint for Cellular Modem Manager extension.
     """
 
     return RedirectResponse(url="/static/index.html")

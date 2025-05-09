@@ -1,6 +1,6 @@
 {
-    "name":"Modem Manager",
-    "description":"Simple extension for managing cellphone modems",
+    "name":"Cellular Modem Manager",
+    "description":"Simple extension for managing Cellular Modems",
     "icon":"mdi-signal-variant",
     "company":"Blue Robotics",
     "version":"0.1.0",
