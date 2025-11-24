@@ -21,7 +21,10 @@ from modem.models import (
     ModemFunctionality,
     OperatorInfo,
     PDPContext,
+    PDPAuthentication,
+    PDPAuthenticationType,
     USBNetMode,
+    PDPType,
 )
 from utils import arr_to_model, get_modem_descriptors
 
@@ -167,8 +170,35 @@ class Modem(abc.ABC):
         return data
 
     @with_at_commander
-    async def set_apn(self, cmd: ATCommander, profile: int, apn: str) -> None:
-        await cmd.command(ATCommand.CONFIGURE_PDP_CONTEXT, ATDivider.EQ, f'{profile},"IP","{apn}"', cmd_id_response=False)
+    async def set_apn(self, cmd: ATCommander, profile: int, apn: str, protocol: Optional[PDPType] = PDPType.IP) -> None:
+        await cmd.command(
+            ATCommand.CONFIGURE_PDP_CONTEXT,
+            ATDivider.EQ,
+            f'{profile},"{protocol.value}","{apn}"',
+            cmd_id_response=False,
+        )
+
+    @with_at_commander
+    async def set_pdp_authentication(self, cmd: ATCommander, profile: int, authentication: PDPAuthentication) -> None:
+        await self.set_apn(profile, authentication.apn, authentication.protocol)
+
+        if authentication.username is None or authentication.password is None:
+            return
+
+        auth_value = authentication.type.to_at_command_value()
+        auth_data = f"{profile},{auth_value}"
+
+        if authentication.type != PDPAuthenticationType.NONE:
+            auth_username = authentication.username or ""
+            auth_password = authentication.password or ""
+            auth_data += f',"{auth_username}","{auth_password}"'
+
+        await cmd.command(
+            ATCommand.CONFIGURE_PDP_AUTH,
+            ATDivider.EQ,
+            auth_data,
+            cmd_id_response=False,
+        )
 
     @with_at_commander
     async def get_clock(self, cmd: ATCommander) -> ModemClockDetails:

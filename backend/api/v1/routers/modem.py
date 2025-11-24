@@ -17,6 +17,7 @@ from modem.models import (
     ModemSIMStatus,
     OperatorInfo,
     PDPContext,
+    PDPAuthentication,
     USBNetMode,
 )
 from settings import DataUsageSettings, DataUsageControlSettings
@@ -253,6 +254,21 @@ async def set_apn_by_profile_by_id(modem_id: str, profile: int, apn: str) -> Non
     modem = Modem.get_device(modem_id)
 
     return await modem.set_apn(profile, apn)
+
+
+@modem_router_v1.put("/{modem_id}/pdp/{profile}/authentication", status_code=status.HTTP_204_NO_CONTENT)
+@modem_to_http_exception
+async def set_pdp_authentication_by_profile_by_id(
+    modem_id: str,
+    profile: int,
+    authentication: PDPAuthentication = Body(...),
+) -> None:
+    """
+    Configures PDP authentication of a modem profile by modem id.
+    """
+    modem = Modem.get_device(modem_id)
+
+    return await modem.set_pdp_authentication(profile, authentication)
 
 
 @modem_router_v1.get("/{modem_id}/usage/details", status_code=status.HTTP_200_OK)

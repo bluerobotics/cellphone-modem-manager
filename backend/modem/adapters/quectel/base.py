@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Tuple, cast
+from typing import Dict, Optional, Tuple, cast
 
 from modem.adapters.quectel.at import QuectelATCommand
 from modem.adapters.quectel.models import BaseServingCell, BaseNeighborCell
@@ -13,6 +13,8 @@ from modem.models import (
     ModemCellInfo,
     ModemSIMStatus,
     NeighborCellType,
+    PDPAuthentication,
+    PDPType,
     USBNetMode,
 )
 from modem.modem import Modem
@@ -170,3 +172,36 @@ class QuectelLTEBase(Modem):
     @Modem.with_at_commander
     async def set_automatic_time_sync(self, cmd: ATCommander, enabled: bool = True) -> None:
         await cmd.command(QuectelATCommand.AUTO_TIME_SYNC, ATDivider.EQ, '1' if enabled else '0', cmd_id_response=False)
+
+
+    @Modem.with_at_commander
+    async def set_pdp_authentication(self, cmd: ATCommander, profile: int, authentication: PDPAuthentication) -> None:
+        await self.set_apn(profile, authentication.apn, authentication.protocol)
+
+        if authentication.username is None or authentication.password is None:
+            return
+
+        _QUECTEL_PROTOCOL_MAPPING: Dict[PDPType, Tuple[str, str]] = {
+            PDPType.IP: ("1", "0"),
+            PDPType.PPP: ("2", "0"),
+            PDPType.IPV6: ("3", "1"),
+            PDPType.IPV4V6: ("1", "0"),
+        }
+
+        context_type, ip_type = _QUECTEL_PROTOCOL_MAPPING.get(authentication.protocol, ("1", "0"))
+
+        auth_username = authentication.username or ""
+        auth_password = authentication.password or ""
+        auth_value = authentication.type.to_at_command_value()
+
+        command_data = (
+            f'{profile},{context_type},"{authentication.apn}","{auth_username}",'
+            f'"{auth_password}",{auth_value},{ip_type}'
+        )
+
+        await cmd.command(
+            QuectelATCommand.CONFIGURE_PDP_AUTH,
+            ATDivider.EQ,
+            command_data,
+            cmd_id_response=False,
+        )

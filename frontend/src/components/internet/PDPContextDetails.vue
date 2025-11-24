@@ -60,7 +60,7 @@
     <v-card class="pa-2">
       <v-card-title>Editing PDP {{ editingPDP?.context_id ?? '-' }}</v-card-title>
       <div v-if="!savingAPN">
-        <v-card-text>New APN for this profile</v-card-text>
+        <v-card-text>Configure the APN and authentication parameters for this profile.</v-card-text>
         <v-text-field
           v-model="pdpAPN"
           class="mx-3"
@@ -70,11 +70,72 @@
           variant="solo-filled"
           style="padding: 8px;"
         />
+        <v-select
+          v-if="isDevMode"
+          v-model="pdpProtocol"
+          class="mx-3"
+          :items="pdpProtocolOptions"
+          label="Protocol"
+          dense
+          variant="solo-filled"
+          style="padding: 8px;"
+        />
+        <v-switch
+          v-model="updateAuthentication"
+          class="mx-3"
+          color="primary"
+          inset
+          label="Update authentication settings"
+        />
+        <v-text-field
+          v-model="pdpUsername"
+          class="mx-3"
+          label="Username"
+          outlined
+          dense
+          variant="solo-filled"
+          style="padding: 8px;"
+          :disabled="!updateAuthentication"
+        />
+        <v-text-field
+          v-model="pdpPassword"
+          class="mx-3"
+          label="Password"
+          :type="showPassword ? 'text' : 'password'"
+          outlined
+          dense
+          variant="solo-filled"
+          style="padding: 8px;"
+          :disabled="!updateAuthentication"
+          :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+          @click:append-inner="showPassword = !showPassword"
+        />
+        <v-select
+          v-model="pdpAuthentication"
+          class="mx-3"
+          :items="pdpAuthenticationOptions"
+          item-title="label"
+          item-value="value"
+          label="Authentication"
+          dense
+          variant="solo-filled"
+          style="padding: 8px;"
+          :disabled="!updateAuthentication"
+        />
       </div>
       <SpinningLogo
         v-else
-        subtitle="Saving new APN"
+        subtitle="Saving PDP configuration"
       />
+
+      <v-alert
+        v-if="editPDPError"
+        class="mx-3 mt-2"
+        type="error"
+        variant="tonal"
+      >
+        {{ editPDPError }}
+      </v-alert>
 
       <v-card-actions class="justify-center pa-2">
         <v-spacer></v-spacer>
@@ -124,7 +185,7 @@
 <script setup lang="ts">
 import { ref, defineProps, watch } from 'vue';
 import ModemManager from '@/services/ModemManager';
-import { ModemDevice, PDPContext, PDPType } from '@/types/ModemManager';
+import { ModemDevice, PDPAuthenticationType, PDPContext, PDPType } from '@/types/ModemManager';
 import { OneMoreTime } from '@/one-more-time';
 import SpinningLogo from '@/components/common/SpinningLogo.vue';
 import { isDevMode } from '@/storage';
@@ -137,9 +198,23 @@ const props = defineProps<{
 const pdpContext = ref<PDPContext[]>([]);
 const editingPDP = ref<PDPContext | null>(null);
 const pdpAPN = ref<string>('');
+const pdpProtocol = ref<PDPType>(PDPType.IP);
+const pdpUsername = ref<string>('');
+const pdpPassword = ref<string>('');
+const pdpAuthentication = ref<PDPAuthenticationType>(PDPAuthenticationType.NONE);
+const updateAuthentication = ref(false);
 const showEditPDPDialog = ref(false);
 const showInfoDialog = ref(false);
 const savingAPN = ref(false);
+const showPassword = ref(false);
+const editPDPError = ref('');
+const pdpProtocolOptions = Object.values(PDPType);
+const pdpAuthenticationOptions = [
+  { label: 'None', value: PDPAuthenticationType.NONE },
+  { label: 'PAP', value: PDPAuthenticationType.PAP },
+  { label: 'CHAP', value: PDPAuthenticationType.CHAP },
+  { label: 'PAP or CHAP', value: PDPAuthenticationType.PAP_OR_CHAP },
+];
 
 /** Utils */
 const fetchPDPContext = async (devMode?: boolean) => {
@@ -161,28 +236,60 @@ const getPDPProtocolName = (value: PDPType): string | undefined => {
 }
 
 /** Callbacks */
+const resetPDPForm = () => {
+  pdpAPN.value = '';
+  pdpProtocol.value = PDPType.IP;
+  pdpUsername.value = '';
+  pdpPassword.value = '';
+  pdpAuthentication.value = PDPAuthenticationType.NONE;
+  updateAuthentication.value = false;
+  showPassword.value = false;
+};
+
 const onOpenEditPDPModal = (pdp: PDPContext) => {
   editingPDP.value = pdp;
+  pdpAPN.value = pdp.access_point_name ?? '';
+  pdpProtocol.value = pdp.protocol ?? PDPType.IP;
+  pdpUsername.value = '';
+  pdpPassword.value = '';
+  pdpAuthentication.value = PDPAuthenticationType.NONE;
+  updateAuthentication.value = false;
+  showPassword.value = false;
+  editPDPError.value = '';
   showEditPDPDialog.value = true;
 }
 
 const onCloseEditPDPModal = () => {
   editingPDP.value = null;
   showEditPDPDialog.value = false;
+  editPDPError.value = '';
+  resetPDPForm();
 }
 
 const onEditPDP = async () => {
+  editPDPError.value = '';
   try {
     if (!editingPDP.value) {
       throw new Error('No PDP context selected for editing');
     }
     savingAPN.value = true;
 
-    await ModemManager.setAPNByProfileById(props.modem.id, editingPDP.value.context_id, pdpAPN.value);
+    await ModemManager.setPDPAuthenticationByProfileById(
+      props.modem.id,
+      editingPDP.value.context_id,
+      {
+        apn: pdpAPN.value,
+        protocol: pdpProtocol.value,
+        username: updateAuthentication.value ? pdpUsername.value : undefined,
+        password: updateAuthentication.value ? pdpPassword.value : undefined,
+        type: updateAuthentication.value ? pdpAuthentication.value : PDPAuthenticationType.NONE,
+      }
+    );
     await fetchPDPContext();
     onCloseEditPDPModal();
   } catch (error) {
     console.error('Failed to edit PDP', error);
+    editPDPError.value = error instanceof Error ? error.message : 'Failed to edit PDP';
   } finally {
     savingAPN.value = false;
   }

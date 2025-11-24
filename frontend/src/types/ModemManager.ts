@@ -167,6 +167,13 @@ export enum PDPRequestType {
   EMERGENCY = "1",
 }
 
+export enum PDPAuthenticationType {
+  NONE = "NONE",
+  PAP = "PAP",
+  CHAP = "CHAP",
+  PAP_OR_CHAP = "PAP_OR_CHAP",
+}
+
 export interface PDPContext {
   context_id: number
   protocol: PDPType
@@ -176,6 +183,14 @@ export interface PDPContext {
   header_compression: PDPHeaderCompression
   ipv6_address: PDPAddressAllocation
   status: PDPRequestType
+}
+
+export interface PDPAuthenticationConfig {
+  apn: string
+  protocol: PDPType
+  username?: string
+  password?: string
+  type: PDPAuthenticationType
 }
 
 /** Signal quality related */

@@ -7,12 +7,13 @@ import {
   ModemClockDetails,
   ModemDevice,
   ModemDeviceDetails,
-  ModemPosition,
   ModemFunctionality,
+  ModemPosition,
   ModemSIMStatus,
   ModemSignalQuality,
   NearbyCellTower,
   OperatorInfo,
+  PDPAuthenticationConfig,
   PDPContext,
   USBNetMode,
 } from '@/types/ModemManager'
@@ -185,14 +186,18 @@ export async function fetchOperatorInfoById(modemId: string): Promise<OperatorIn
 }
 
 /**
- * Set APN of a profile by modem id.
+ * Configure PDP authentication of a profile by modem id.
  * @param {string} modemId - Modem ID
  * @param {number} profile - Profile ID
- * @param {string} apn - Access Point Name
+ * @param {PDPAuthenticationConfig} authentication - PDP authentication configuration
  * @returns {Promise<void>}
  */
-export async function setAPNByProfileById(modemId: string, profile: number, apn: string): Promise<void> {
-  await api.put(`/modem/${modemId}/pdp/${profile}/apn/${apn}`)
+export async function setPDPAuthenticationByProfileById(
+  modemId: string,
+  profile: number,
+  authentication: PDPAuthenticationConfig,
+): Promise<void> {
+  await api.put(`/modem/${modemId}/pdp/${profile}/authentication`, authentication)
 }
 
 /**
@@ -253,7 +258,7 @@ export default {
   fetchUSBModeById,
   rebootById,
   resetById,
-  setAPNByProfileById,
+  setPDPAuthenticationByProfileById,
   setDataUsageControlById,
   setUSBModeById,
 };
