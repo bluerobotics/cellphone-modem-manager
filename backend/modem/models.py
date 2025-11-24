@@ -144,6 +144,30 @@ class PDPRequestType(Enum):
     NORMAL = "0"
     EMERGENCY = "1"
 
+
+class PDPAuthenticationType(Enum):
+    NONE = "NONE"
+    PAP = "PAP"
+    CHAP = "CHAP"
+    PAP_OR_CHAP = "PAP_OR_CHAP"
+
+    def to_at_command_value(self) -> str:
+        return {
+            PDPAuthenticationType.NONE: "0",
+            PDPAuthenticationType.PAP: "1",
+            PDPAuthenticationType.CHAP: "2",
+            PDPAuthenticationType.PAP_OR_CHAP: "3",
+        }[self]
+
+
+class PDPAuthentication(BaseModel):
+    apn: str
+    protocol: PDPType = PDPType.IP
+    password: Optional[str] = None
+    username: Optional[str] = None
+    type: PDPAuthenticationType = PDPAuthenticationType.NONE
+
+
 class PDPContext(BaseModel):
     context_id: int
     protocol: PDPType
