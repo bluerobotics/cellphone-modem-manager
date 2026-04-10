@@ -29,6 +29,15 @@ class ATCommand(Enum):
     CONFIGURE_PDP_CONTEXT = "AT+CGDCONT"
     CONFIGURE_PDP_AUTH = "AT+CGAUTH"
     CONFIGURE_FUNCTIONALITY = "AT+CFUN"
+    REPORT_MOBILE_EQUIPMENT_ERROR = "AT+CMEE"
+    SIM_PIN_STATUS = "AT+CPIN"
+    SIM_CARD_IDENTIFICATION = "AT+CCID"
+    NETWORK_REGISTRATION = "AT+CREG"
+    GPRS_NETWORK_REGISTRATION = "AT+CGREG"
+    EPS_NETWORK_REGISTRATION = "AT+CEREG"
+    PS_ATTACH = "AT+CGATT"
+    PDP_CONTEXT_ACTIVATE = "AT+CGACT"
+    PDP_CONTEXT_READ_DYNAMIC = "AT+CGCONTRDP"
 
 
 class ATDivider(Enum):
@@ -175,7 +184,8 @@ class ATCommander:
         divider: ATDivider = ATDivider.UNDEFINED,
         data: str = "",
         cmd_id_response: bool = True,
-        delay: float = 0.3
+        delay: float = 0.3,
+        raw_response: bool = False,
     ) -> ATResponse:
         # If commands have AT+ it should include in response it, for async commands like AT+QPING
         # that will return OK as soon as hit, but after some time return the result as +QPING: ......
@@ -184,7 +194,8 @@ class ATCommander:
         return await self.raw_command(
             f"{command.value}{divider.value}{data}\r\n",
             cmd_id_response=expected_cmd_id,
-            delay=delay
+            delay=delay,
+            raw_response=raw_response,
         )
 
     async def check_ok(self) -> bool:
