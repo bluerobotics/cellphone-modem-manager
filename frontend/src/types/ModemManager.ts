@@ -252,3 +252,24 @@ export interface NearbyCellTower {
   range: number
   radio: NearbyCellRadio
 }
+
+/** Report generation */
+
+export interface ReportStatus {
+  running: boolean
+  progress?: {
+    current_step: number
+    total_steps: number
+  }
+}
+
+export interface ReportEvent {
+  type: 'step_start' | 'step_complete' | 'report_complete' | 'error'
+  step?: number
+  total?: number
+  name?: string
+  command?: string
+  output?: string
+  report?: string
+  message?: string
+}

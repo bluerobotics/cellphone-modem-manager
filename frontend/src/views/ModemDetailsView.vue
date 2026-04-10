@@ -5,6 +5,17 @@
         <v-icon size="30">mdi-arrow-left</v-icon>
       </v-btn>
       <v-toolbar-title>{{ props.modem.manufacturer }} / {{ props.modem.product }}</v-toolbar-title>
+      <v-btn
+        v-if="isDevMode"
+        variant="tonal"
+        color="orange"
+        size="small"
+        class="ml-2"
+        @click="showReportDialog = true"
+      >
+        <v-icon start>mdi-file-chart</v-icon>
+        Metrics Report
+      </v-btn>
       <v-tooltip bottom>
         <template #activator="{ props }">
           <v-btn
@@ -94,6 +105,11 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <MetricsReportDialog
+      v-model="showReportDialog"
+      :modem="props.modem"
+    />
   </v-container>
 </template>
 
@@ -104,6 +120,7 @@ import defaultThumbnail from "@/assets/thumbs/unknown.svg";
 
 import ModemManager from '@/services/ModemManager';
 import { ModemDevice, ModemClockDetails, ModemFunctionality } from '@/types/ModemManager';
+import MetricsReportDialog from '@/components/device/MetricsReportDialog.vue';
 
 import NetworkDetailsTab from '@/components/network/NetworkDetailsTab.vue';
 import DeviceDetailsTab from '@/components/device/DeviceDetailsTab.vue';
@@ -124,6 +141,7 @@ const selectedTab = ref<number>(0);
 const currentClockGmtOffset = ref<number>(0);
 const currentClock = ref<number | null>(null);
 const modemEnabled = ref<boolean | null>(null);
+const showReportDialog = ref(false);
 
 /** Utils */
 const clockToUnix = (clock: ModemClockDetails) => {

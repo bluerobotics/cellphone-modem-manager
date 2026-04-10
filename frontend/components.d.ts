@@ -11,6 +11,7 @@ declare module 'vue' {
     InternetControllerMode: typeof import('./src/components/internet/InternetControllerMode.vue')['default']
     InternetDetailsTab: typeof import('./src/components/internet/InternetDetailsTab.vue')['default']
     InternetSpeed: typeof import('./src/components/internet/InternetSpeed.vue')['default']
+    MetricsReportDialog: typeof import('./src/components/device/MetricsReportDialog.vue')['default']
     ModemCard: typeof import('./src/components/ModemCard.vue')['default']
     ModemDeviceDetails: typeof import('./src/components/device/ModemDeviceDetails.vue')['default']
     ModemOperatorDetails: typeof import('./src/components/device/ModemOperatorDetails.vue')['default']

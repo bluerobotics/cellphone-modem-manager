@@ -15,6 +15,8 @@ import {
   OperatorInfo,
   PDPAuthenticationConfig,
   PDPContext,
+  ReportEvent,
+  ReportStatus,
   USBNetMode,
 } from '@/types/ModemManager'
 
@@ -239,6 +241,62 @@ export async function fetchNearbyCellsCoordinates(
   return response.data as NearbyCellTower[]
 }
 
+/**
+ * Check whether a metrics report is currently being generated for the given modem.
+ * @param {string} modemId - Modem ID
+ * @returns {Promise<ReportStatus>}
+ */
+export async function fetchReportStatus(modemId: string): Promise<ReportStatus> {
+  const response = await api.get(`/modem/${modemId}/report/status`)
+  return response.data as ReportStatus
+}
+
+/**
+ * Start or connect to an in-progress metrics report for the given modem.
+ * Streams NDJSON events to the provided callback. Returns when the stream ends.
+ * @param {string} modemId - Modem ID
+ * @param {function} onEvent - Callback for each report event
+ * @param {AbortSignal} signal - Optional abort signal to cancel the stream
+ */
+export async function streamReport(
+  modemId: string,
+  onEvent: (event: ReportEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await window.fetch(`${MODEM_MANAGER_V1_API}/modem/${modemId}/report`, {
+    method: 'POST',
+    signal,
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to start report: ${response.statusText}`)
+  }
+
+  const reader = response.body!.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop()!
+
+    for (const line of lines) {
+      if (line.trim()) {
+        try {
+          onEvent(JSON.parse(line) as ReportEvent)
+        } catch {
+          // Ignore malformed lines
+        }
+      }
+    }
+  }
+}
+
 export default {
   commandById,
   disableById,
@@ -253,6 +311,7 @@ export default {
   fetchOperatorInfoById,
   fetchPDPInfoById,
   fetchPositionById,
+  fetchReportStatus,
   fetchSIMStatusById,
   fetchSignalStrengthById,
   fetchUSBModeById,
@@ -261,4 +320,5 @@ export default {
   setPDPAuthenticationByProfileById,
   setDataUsageControlById,
   setUSBModeById,
+  streamReport,
 };
