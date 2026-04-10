@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
 
 # Routers
-from api.v1.routers import blueos_router_v1, cells_router_v1, index_router_v1, modem_router_v1
+from api.v1.routers import blueos_router_v1, cells_router_v1, index_router_v1, modem_router_v1, report_router_v1
 
 application = FastAPI(
     title="Cellular Modem Manager Configuration API",
@@ -19,6 +19,7 @@ application.include_router(blueos_router_v1)
 application.include_router(index_router_v1)
 application.include_router(cells_router_v1)
 application.include_router(modem_router_v1)
+application.include_router(report_router_v1)
 
 application = VersionedFastAPI(application, prefix_format="/v{major}.{minor}", enable_latest=True)
 

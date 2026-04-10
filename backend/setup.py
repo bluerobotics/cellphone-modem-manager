@@ -12,7 +12,7 @@ setup(
     version="0.1.0",
     description="Simple extension to manager LT EG35-G modem",
     license="MIT",
-    packages=find_packages(include=['api', 'modem']),
+    packages=find_packages(include=['api', 'modem', 'report']),
     install_requires=[
         "appdirs==1.4.4",
         # Starlet is enforced by commonwealth so we need to use the same version
